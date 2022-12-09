@@ -3,12 +3,11 @@ project(genetics C)
 
 set(CMAKE_C_STANDARD 11)
 
-include_directories(.)
+include_directories(include)
+add_subdirectory(src)
 
 add_executable(genetics
-        defineg.h
-        fun.h
-        fun_s.c
-        gengrupos_s.c)
+        src/fun_s.c
+        src/gengrupos_s.c)
 
 target_link_libraries(genetics m)

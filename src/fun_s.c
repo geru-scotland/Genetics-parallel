@@ -1,7 +1,7 @@
 /*
     AC - OpenMP -- SERIE
     fun_s.c
-     rutinas que se utilizan en el modulo gengrupos_s.c 
+     rutinas que se utilizan en el modulo gengrupos_s.c
 ****************************************************************************/
 #include <math.h>
 #include <float.h> // DBL_MAX
@@ -45,17 +45,17 @@ void grupo_cercano (int nelem, float elem[][NCAR], float cent[][NCAR], int *popu
 *****************************************************************************************/
 double silhouette_simple(float elem[][NCAR], struct lista_grupos *listag, float cent[][NCAR], float a[]){
     //float b[ngrupos];
-    
+
     // PARA COMPLETAR
 
 	// aproximar a[i] de cada cluster: calcular la densidad de los grupos
     //		media de las distancia entre todos los elementos del grupo
     //   	si el numero de elementos del grupo es 0 o 1, densidad = 0
 
-    
+
     // aproximar b[i] de cada cluster
 
-	
+
 	// calcular el ratio s[i] de cada cluster
 
 
