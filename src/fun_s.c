@@ -18,7 +18,7 @@ double gendist (float *elem1, float *elem2)
 {
     float total = 0.0f;
 
-    for(int i = 0; i < 3; i++)
+    for(int i = 0; i < NCAR; i++)
         total += (float)(pow((double)(elem1[i] - elem2[i]), 2));
 
 	return sqrtf(total);
