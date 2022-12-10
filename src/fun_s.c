@@ -6,7 +6,7 @@
 #include <math.h>
 #include <float.h> // DBL_MAX
 #include <stdlib.h>
-
+#include <stdio.h>
 #include "defineg.h"           // definiciones
 
 /**************************************************************************************
@@ -16,9 +16,12 @@
 **************************************************************************************/
 double gendist (float *elem1, float *elem2)
 {
-	// PARA COMPLETAR
-	// calcular la distancia euclidea entre dos vectores
-	return 0.0;
+    float total = 0.0f;
+
+    for(int i = 0; i < 3; i++)
+        total += (float)(pow((double)(elem1[i] - elem2[i]), 2));
+
+	return sqrtf(total);
 }
 
 /****************************************************************************************
