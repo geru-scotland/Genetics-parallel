@@ -24,7 +24,7 @@ struct lista_grupos listag[MAX_GRUPOS];   // lista de elementos de los grupos
 float  enf[MAXE][TENF];                // enfermedades asociadas a las muestras
 struct  analisis prob_enf[TENF];       // analisis de los tipos de enfermedades
 
-int ngrupos = 35;
+int nclusters = 35;
 
 // programa principal
 // ==================
@@ -91,12 +91,12 @@ int main (int argc, char *argv[]) {
 
 	convergencia_cont = 0;
 	sil_old = -1;
-	while(ngrupos<MAX_GRUPOS && convergencia_cont<1){
+	while(nclusters < MAX_GRUPOS && convergencia_cont < 1){
 		// generacion de los primeros centroides de forma aleatoria
 		// ========================================================
 		inicializar_centroides(cent);
 
-		// A: agrupar los elementos en ngrupos clusteres
+		// A: agrupar los elementos en nclusters clusteres
 		// ===============================================
 		num_ite = 0;
 		fin = 0;
@@ -115,7 +115,7 @@ int main (int argc, char *argv[]) {
 		// ==========================================
 
 		// lista de clusters: numero de elementos y su clasificacion
-		for (i=0; i<ngrupos; i++) listag[i].nelemg = 0;
+		for (i=0; i < nclusters; i++) listag[i].nelemg = 0;
 		for (i=0; i<nelem; i++){
 			grupo = popul[i];
 			num=listag[grupo].nelemg;
@@ -132,9 +132,9 @@ int main (int argc, char *argv[]) {
 		else convergencia_cont = 0;
 		sil_old = sil;
 
-		ngrupos=ngrupos+10;
+        nclusters= nclusters + 10;
 	}
-	ngrupos=ngrupos-10;
+    nclusters= nclusters - 10;
 	clock_gettime (CLOCK_REALTIME, &t17);
 	t_clust = (t17.tv_sec-t12.tv_sec) + (t17.tv_nsec-t12.tv_nsec)/(double)1e9;
 
@@ -157,33 +157,33 @@ int main (int argc, char *argv[]) {
 	}
 
 	fprintf (fd,">> Centroides de los clusters\n\n");
-	for (i=0; i<ngrupos; i++) {
+	for (i=0; i < nclusters; i++) {
 		for (j=0; j<NCAR; j++) fprintf (fd, "%7.3f", cent[i][j]);
 		fprintf (fd,"\n");
 	}
 
-	fprintf (fd,"\n\n>> Numero de clusteres: %d. Numero de elementos en cada cluster:\n\n", ngrupos);
+	fprintf (fd, "\n\n>> Numero de clusteres: %d. Numero de elementos en cada cluster:\n\n", nclusters);
 	ind = 0;
-	for (i=0; i<ngrupos/10; i++) {
+	for (i=0; i < nclusters / 10; i++) {
 		for (j=0; j<10; j++){
 			fprintf(fd, "%6d", listag[ind].nelemg);
 			ind++;
 		}
 		fprintf(fd, "\n");
 	}
-	for(i=ind; i<ngrupos; i++) fprintf(fd, "%6d", listag[i].nelemg);
+	for(i=ind; i < nclusters; i++) fprintf(fd, "%6d", listag[i].nelemg);
 	fprintf(fd, "\n");
 
 	fprintf (fd, "\n>> Densidad de los clusters: b[i]\n\n");
 	ind = 0;
-	for (i=0; i<ngrupos/10; i++) {
+	for (i=0; i < nclusters / 10; i++) {
 		for (j=0; j<10; j++){
 			fprintf (fd, "%9.2f", a[ind]);
 			ind++;
 		}
 		fprintf (fd, "\n");
 	}
-	for(i=ind; i<ngrupos; i++) fprintf(fd, "%9.2f", a[i]);
+	for(i=ind; i < nclusters; i++) fprintf(fd, "%9.2f", a[i]);
 	fprintf(fd, "\n");
 
 	fprintf (fd,"\n\n>> Analisis de enfermedades (medianas) en los grupos\n\n");
@@ -198,34 +198,34 @@ int main (int argc, char *argv[]) {
 	// =======================================
 
 	printf ("\n>> Centroides 0, 20, 40...\n");
-	for (i=0; i<ngrupos; i+=20) {
+	for (i=0; i < nclusters; i+=20) {
 		printf ("\n  cent%2d -- ", i);
 		for (j=0; j<NCAR; j++) printf ("%5.1f", cent[i][j]);
 		printf("\n");
 	}
 
-	printf ("\n>> Numero de clusteres: %d. Tamanno de los grupos:\n\n", ngrupos);
+	printf ("\n>> Numero de clusteres: %d. Tamanno de los grupos:\n\n", nclusters);
 	ind = 0;
-	for (i=0; i<ngrupos/10; i++) {
+	for (i=0; i < nclusters / 10; i++) {
 		for (j=0; j<10; j++){
 			printf ("%6d", listag[ind].nelemg);
 			ind++;
 		}
 		printf ("\n");
 	}
-	for(i=ind; i<ngrupos; i++) printf("%6d", listag[i].nelemg);
+	for(i=ind; i < nclusters; i++) printf("%6d", listag[i].nelemg);
 	printf("\n");
 
 	printf("\n>> Densidad de los clusters: b[i]\n\n");
 	ind = 0;
-	for (i=0; i<ngrupos/10; i++) {
+	for (i=0; i < nclusters / 10; i++) {
 		for (j=0; j<10; j++){
 			printf("%9.2f", a[ind]);
 			ind++;
 		}
 		printf("\n");
 	}
-	for(i=ind; i<ngrupos; i++) printf("%9.2f", a[i]);
+	for(i=ind; i < nclusters; i++) printf("%9.2f", a[i]);
 	printf("\n");
 
 	printf ("\n>> Analisis de enfermedades en los grupos\n\n");

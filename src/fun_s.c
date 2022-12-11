@@ -14,7 +14,7 @@
        Entrada:  2 elementos con NCAR caracteristicas (por referencia)
        Salida:  distancia (double)
 **************************************************************************************/
-double gendist (float *elem1, float *elem2)
+double gendist(float *elem1, float *elem2)
 {
     float total = 0.0f;
 
@@ -31,10 +31,26 @@ double gendist (float *elem1, float *elem2)
              cent   centroides, una matriz de tamanno NGRUPOS x NCAR, por referencia
    Salida:   popul  grupo mas cercano a cada elemento, vector de tamanno MAXE, por referencia
 *****************************************************************************************/
-void grupo_cercano (int nelem, float elem[][NCAR], float cent[][NCAR], int *popul)
+void grupo_cercano(int nelem, float elem[][NCAR], float cent[][NCAR], int *popul)
 {
-	// PARA COMPLETAR
-	// popul: grupo mas cercano a cada elemento
+	/*
+	 * Cada elemento de elem[MAXE][NCAR] se tiene que comparar con los k centroides
+	 * de cent[NGRUPOS][NCAR] (vectores). Ejemplo: gendist(elem[0], cent[0]).
+	 * popul[MAXE] -> posicion 0 de este vector, estará linkado con elem[MAXE].
+	 * Ejemplo: popul[0] será el cluster más cercano al elemento elem[0]
+	 * Donde popul[0] puede adoptar los valores de cent
+	 */
+	double mindist, dist;
+
+	for(int i = 0; i < nelem; i++){
+		for(int k = 0; k < nclusters; k++) {
+			dist = gendist(elem[i], cent[k]);
+			if(dist < mindist){
+				mindist = dist;
+				popul[i] = k;
+			}
+		}
+	}
 }
 
 /****************************************************************************************
@@ -47,7 +63,7 @@ void grupo_cercano (int nelem, float elem[][NCAR], float cent[][NCAR], int *popu
    Salida:   valor del CVI (double): calidad/ bondad de la particion de clusters
 *****************************************************************************************/
 double silhouette_simple(float elem[][NCAR], struct lista_grupos *listag, float cent[][NCAR], float a[]){
-    //float b[ngrupos];
+    //float b[nclusters];
 
     // PARA COMPLETAR
 
@@ -72,7 +88,7 @@ double silhouette_simple(float elem[][NCAR], struct lista_grupos *listag, float 
              enf      enfermedades, una matriz de tamaño MAXE x TENF, por referencia
    Salida:   prob_enf vector de TENF structs (informacion del análisis realizado), por ref.
 *****************************************************************************************/
-void analisis_enfermedades (struct lista_grupos *listag, float enf[][TENF], struct analisis *prob_enf)
+void analisis_enfermedades(struct lista_grupos *listag, float enf[][TENF], struct analisis *prob_enf)
 {
 	// PARA COMPLETAR
 	// Realizar el análisis de enfermedades en los grupos:
@@ -89,7 +105,7 @@ void analisis_enfermedades (struct lista_grupos *listag, float enf[][TENF], stru
 void inicializar_centroides(float cent[][NCAR]){
 	int i, j;
 	srand (147);
-	for (i=0; i<ngrupos; i++)
+	for (i=0; i < nclusters; i++)
 		for (j=0; j<NCAR/2; j++){
 			cent[i][j] = (rand() % 10000) / 100.0;
 			cent[i][j+(NCAR/2)] = cent[i][j];
@@ -99,10 +115,10 @@ void inicializar_centroides(float cent[][NCAR]){
 int nuevos_centroides(float elem[][NCAR], float cent[][NCAR], int popul[], int nelem){
 	int i, j, fin;
 	double discent;
-	double additions[ngrupos][NCAR+1];
-	float newcent[ngrupos][NCAR];
+	double additions[nclusters][NCAR + 1];
+	float newcent[nclusters][NCAR];
 
-	for (i=0; i<ngrupos; i++)
+	for (i=0; i < nclusters; i++)
 		for (j=0; j<NCAR+1; j++)
 			additions[i][j] = 0.0;
 
@@ -114,7 +130,7 @@ int nuevos_centroides(float elem[][NCAR], float cent[][NCAR], int popul[], int n
 
 	// calcular los nuevos centroides y decidir si el proceso ha finalizado o no (en funcion de DELTA)
 	fin = 1;
-	for (i=0; i<ngrupos; i++){
+	for (i=0; i < nclusters; i++){
 		if (additions[i][NCAR] > 0) { // ese grupo (cluster) no esta vacio
 			// media de cada caracteristica
 			for (j=0; j<NCAR; j++)

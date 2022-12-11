@@ -12,7 +12,7 @@
 #define DELTA2    0.01     // convergencia: Best First, Silhouette
 #define MAXIT    10000    // convergencia: numero de iteraciones maximo
 
-extern int ngrupos;
+extern int nclusters;
 
 // estructuras de datos
 //
