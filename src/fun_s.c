@@ -9,6 +9,13 @@
 #include <stdio.h>
 #include "defineg.h"           // definiciones
 
+
+float sort_and_median(int n, float* disease_data){
+
+    return 0.0f;
+}
+
+
 /**************************************************************************************
    1 - Funcion para calcular la distancia genetica entre dos elementos (distancia euclidea)
        Entrada:  2 elementos con NCAR caracteristicas (por referencia)
@@ -47,6 +54,7 @@ void nearest_cluster(int nelem, float elem[][NCAR], float cent[][NCAR], int *sam
 	}
 }
 
+
 /****************************************************************************************
    3 - Funcion para calcular la calidad de la particion de clusteres.
        Ratio entre a y b. El termino a corresponde a la distancia intra-cluster.
@@ -59,7 +67,7 @@ void nearest_cluster(int nelem, float elem[][NCAR], float cent[][NCAR], int *sam
 double silhouette_simple(float samples[][NCAR], struct lista_grupos *cluster_data, float centroids[][NCAR], float a[]){
     float b[nclusters];
     for(int k = 0; k < nclusters; k++) b[k] = 0.0f;
-
+    for(int k = 0; k < MAX_GRUPOS; k++) a[k] = 0.0f;
     // Me baso en teoría de grafos para obtener el peso total de las distancias
     // Según se va avanzando, únicamente tengo en cuenta las distancias
     // con elementos posicionados en posiciones mayores que la actual.
@@ -102,15 +110,49 @@ double silhouette_simple(float samples[][NCAR], struct lista_grupos *cluster_dat
              enf      enfermedades, una matriz de tamaño MAXE x TENF, por referencia
    Salida:   prob_enf vector de TENF structs (informacion del análisis realizado), por ref.
 *****************************************************************************************/
-void analisis_enfermedades(struct lista_grupos *cluster_data, float enf[][TENF], struct analisis *prob_enf)
+void analisis_enfermedades(struct lista_grupos *cluster_data, float enf[][TENF], struct analisis *data)
 {
-	// PARA COMPLETAR
-	// Realizar el análisis de enfermedades en los grupos:
-	//		mediana máxima y el grupo en el que se da este máximo (para cada enfermedad)
-	//		mediana mínima y su grupo en el que se da este mínimo (para cada enfermedad)
+    // Ahora utilizamos algoritmo de burbuja para el ordenado, pero lo reemplazaremos por
+    // Quicksort en breves.
+
+    int cluster_size = 0;
+    float medians[TENF][nclusters];
+
+    for(int i = 0; i < TENF; i++)
+        for(int j = 0; j < nclusters; j++)
+            medians[i][j] = 0.0f;
+
+    for(int k = 0; k < nclusters; k++){
+        for(int i = 0; i < TENF; i++){
+
+            cluster_size = cluster_data[k].nelems;
+            float disease_data[cluster_size];
+            for(int n = 0; n < cluster_size; n++) disease_data[n] = 0.0f;
+
+            for(int j = 0; j < cluster_size; j++)
+                disease_data[j] = enf[cluster_data[k].elem_index[j]][i];
+
+            medians[i][k] = sort_and_median(cluster_size, disease_data);
+        }
+    }
+
+    float median = 0.0f;
+    for(int i = 0; i < TENF; i++){
+        data[i].mmin = 0;
+        data[i].mmax = __DBL_MAX__;
+        for(int k = 0; k < nclusters; k++){
+            median = medians[i][k];
+            if(median < data[i].mmin){
+                data[i].mmin = median;
+                data[i].gmin = k;
+            }
+            if(median > data[i].mmax){
+                data[i].mmax = median;
+                data[i].gmax = k;
+            }
+        }
+    }
 }
-
-
 
 /***************************************************************************************************
    OTRAS FUNCIONES DE LA APLICACION
@@ -164,4 +206,3 @@ int nuevos_centroides(float elem[][NCAR], float cent[][NCAR], int samples[], int
 	}
 	return fin;
 }
-
