@@ -97,7 +97,7 @@ double silhouette_simple(float samples[][NCAR], struct lista_grupos *cluster_dat
     for(int k = 0; k < nclusters; k++){
         max = a[k] >= b[k] ? a[k] : b[k];
         if(max != 0.0f)
-            sil += a[k];
+            sil += (b[k]-a[k])/max;
     }
 
     printf("\nSILHOUETEE: s=%f, nclusters=%i Calidad de cluster: %f\n", sil, nclusters, (double)(sil / (float)nclusters));
