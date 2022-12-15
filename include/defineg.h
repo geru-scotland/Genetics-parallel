@@ -12,14 +12,16 @@
 #define DELTA2    0.01     // convergencia: Best First, Silhouette
 #define MAXIT    10000    // convergencia: numero de iteraciones maximo
 
+#define MAX(a, b) a >= b ? a : b
+
 extern int nclusters;
 
 // estructuras de datos
 //
 struct lista_grupos  // informacion de los clusters
 {
- int elemg[MAXE];   // indices de los elementos
- int nelemg;        // numero de elementos
+ int elem_index[MAXE];   // indices de los elementos
+ int nelems;        // numero de elementos
 };
 
 struct analisis     // resultados del analisis de enfermedades

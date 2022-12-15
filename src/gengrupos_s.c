@@ -10,7 +10,6 @@
 
     compilar con el modulo fun_s.c y la opcion -lm
 *************************************************************************/
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -19,7 +18,7 @@
 #include "fun.h"
 
 float  elem[MAXE][NCAR];               // elementos (muestras) a procesar
-struct lista_grupos listag[MAX_GRUPOS];   // lista de elementos de los grupos
+struct lista_grupos cluster_data[MAX_GRUPOS];   // lista de elementos de los grupos
 
 float  enf[MAXE][TENF];                // enfermedades asociadas a las muestras
 struct  analisis prob_enf[TENF];       // analisis de los tipos de enfermedades
@@ -102,7 +101,7 @@ int main (int argc, char *argv[]) {
 		fin = 0;
 		while ((fin == 0) && (num_ite < MAXIT)) {
 			// calcular el grupo mas cercano
-			grupo_cercano (nelem, elem, cent, popul);
+            nearest_cluster(nelem, elem, cent, popul);
 
 			// calcular los nuevos centroides de los grupos
 			fin = nuevos_centroides(elem, cent, popul, nelem);
@@ -115,26 +114,26 @@ int main (int argc, char *argv[]) {
 		// ==========================================
 
 		// lista de clusters: numero de elementos y su clasificacion
-		for (i=0; i < nclusters; i++) listag[i].nelemg = 0;
-		for (i=0; i<nelem; i++){
+		for (i=0; i < nclusters; i++) cluster_data[i].nelems = 0;
+		for (i=0; i < nelem; i++){
 			grupo = popul[i];
-			num=listag[grupo].nelemg;
-			listag[grupo].elemg[num] = i;  // elementos de cada grupo (cluster)
-			listag[grupo].nelemg++;
+			num = cluster_data[grupo].nelems;
+            //printf("INSERTANDO DATO EN LISTA %f", elem[i][0]);
+			cluster_data[grupo].elem_index[num] = i;  // elementos de cada grupo (cluster)
+			cluster_data[grupo].nelems++;
 		}
 
 		// silhouette simple: calidad de la particion
-		sil = silhouette_simple(elem, listag, cent, a);
+		sil = silhouette_simple(elem, cluster_data, cent, a);
 
 		// calcular la diferencia: estabilidad
 		diff = sil - sil_old;
 		if(diff < DELTA2) convergencia_cont++;
 		else convergencia_cont = 0;
 		sil_old = sil;
-
-        nclusters= nclusters + 10;
+        nclusters = nclusters + 10;
 	}
-    nclusters= nclusters - 10;
+    nclusters = nclusters - 10;
 	clock_gettime (CLOCK_REALTIME, &t17);
 	t_clust = (t17.tv_sec-t12.tv_sec) + (t17.tv_nsec-t12.tv_nsec)/(double)1e9;
 
@@ -143,7 +142,7 @@ int main (int argc, char *argv[]) {
 
 	// analisis de enfermedades
 	clock_gettime (CLOCK_REALTIME, &t20);
-	analisis_enfermedades (listag, enf, prob_enf);
+	analisis_enfermedades (cluster_data, enf, prob_enf);
 	clock_gettime (CLOCK_REALTIME, &t21);
 	t_enf = (t21.tv_sec-t20.tv_sec) + (t21.tv_nsec-t20.tv_nsec)/(double)1e9;
 
@@ -166,12 +165,12 @@ int main (int argc, char *argv[]) {
 	ind = 0;
 	for (i=0; i < nclusters / 10; i++) {
 		for (j=0; j<10; j++){
-			fprintf(fd, "%6d", listag[ind].nelemg);
+			fprintf(fd, "%6d", cluster_data[ind].nelems);
 			ind++;
 		}
 		fprintf(fd, "\n");
 	}
-	for(i=ind; i < nclusters; i++) fprintf(fd, "%6d", listag[i].nelemg);
+	for(i=ind; i < nclusters; i++) fprintf(fd, "%6d", cluster_data[i].nelems);
 	fprintf(fd, "\n");
 
 	fprintf (fd, "\n>> Densidad de los clusters: b[i]\n\n");
@@ -208,12 +207,12 @@ int main (int argc, char *argv[]) {
 	ind = 0;
 	for (i=0; i < nclusters / 10; i++) {
 		for (j=0; j<10; j++){
-			printf ("%6d", listag[ind].nelemg);
+			printf ("%6d", cluster_data[ind].nelems);
 			ind++;
 		}
 		printf ("\n");
 	}
-	for(i=ind; i < nclusters; i++) printf("%6d", listag[i].nelemg);
+	for(i=ind; i < nclusters; i++) printf("%6d", cluster_data[i].nelems);
 	printf("\n");
 
 	printf("\n>> Densidad de los clusters: b[i]\n\n");
