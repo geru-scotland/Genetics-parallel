@@ -14,7 +14,7 @@
        Entrada:  2 elementos con NCAR caracteristicas (por referencia)
        Salida:  distancia (double)
 **************************************************************************************/
-double genecticdist(float *elem1, float *elem2)
+double geneticdist(float *elem1, float *elem2)
 {
     double total = 0.0f;
 
@@ -29,31 +29,21 @@ double genecticdist(float *elem1, float *elem2)
    Entrada:  nelem  numero de elementos, int
              elem   elementos, una matriz de tamanno MAXE x NCAR, por referencia
              cent   centroides, una matriz de tamanno NGRUPOS x NCAR, por referencia
-   Salida:   popul  grupo mas cercano a cada elemento, vector de tamanno MAXE, por referencia
+   Salida:   samples  grupo mas cercano a cada elemento, vector de tamanno MAXE, por referencia
 *****************************************************************************************/
-void nearest_cluster(int nelem, float elem[][NCAR], float cent[][NCAR], int *popul)
+void nearest_cluster(int nelem, float elem[][NCAR], float cent[][NCAR], int *samples)
 {
-	/*
-	 * Cada elemento de elem[MAXE][NCAR] se tiene que comparar con los k centroides
-	 * de cent[NGRUPOS][NCAR] (vectores). Ejemplo: genecticdist(elem[0], cent[0]).
-	 * popul[MAXE] -> posicion 0 de este vector, estará linkado con elem[MAXE].
-	 * Ejemplo: popul[0] será el cluster más cercano al elemento elem[0]
-	 * Donde popul[0] puede adoptar los valores de cent
-	 */
 	double dist, mindist;
 
 	for(int i = 0; i < nelem; i++){
         mindist = __DBL_MAX__;
 		for(int k = 0; k < nclusters; k++) {
-			dist = genecticdist(elem[i], cent[k]);
-            //printf("\n Comparando elemento: %i con centroide del cluster k=: %i \n", i, k);
+			dist = geneticdist(elem[i], cent[k]);
 			if(dist < mindist){
 				mindist = dist;
-                popul[i] = k;
-                //printf("\n popul[%i] = %i (mindist=%f)\n", i, k, mindist);
+                samples[i] = k;
 			}
 		}
-        //printf("\nNearest cluster for muestra %i is %i (mindist=%f)\n", i, popul[i], mindist);
 	}
 }
 
@@ -70,46 +60,40 @@ double silhouette_simple(float samples[][NCAR], struct lista_grupos *cluster_dat
     float b[nclusters];
     for(int k = 0; k < nclusters; k++) b[k] = 0.0f;
 
+    // Me baso en teoría de grafos para obtener el peso total de las distancias
+    // Según se va avanzando, únicamente tengo en cuenta las distancias
+    // con elementos posicionados en posiciones mayores que la actual.
     for(int k = 0; k < nclusters; k++){
-        //printf("\nCluster %i) nelements=%i\n", k, cluster_data[k].nelems);
         for(int i = 0; i < cluster_data[k].nelems; i++){
             for(int j = i + 1; j < cluster_data[k].nelems; j++){
-                a[k] += (float) genecticdist(samples[cluster_data[k].elem_index[i]],
-                                             samples[cluster_data[k].elem_index[j]]);
-                //printf("\n elem_index[%i] = %f y con desplazo: %f", i , samples[cluster_data[k].elem_index[i]][0], samples[cluster_data[k].elem_index[j]][0]);
+                a[k] += (float) geneticdist(samples[cluster_data[k].elem_index[i]],
+                                            samples[cluster_data[k].elem_index[j]]);
             }
         }
 
-        // Utilizo la Suma Gaussiana para obtener el número de distancias
-        // medidas para los n elementos de cada clúster. n(n-1)/2 (Teoría de Grafos, cálculo de aristas totales).
-        float ngauss = ((float)(cluster_data[k].nelems * (cluster_data[k].nelems - 1)) / 2);
-        a[k] = cluster_data[k].nelems <= 1 ? 0 : a[k] / ngauss;
+        // medidas para los n elementos de cada clúster. n(n-1)/2.
+        // Equivale al Cálculo de aristas totales para un grafo completo.
+        float narista = ((float)(cluster_data[k].nelems * (cluster_data[k].nelems - 1)) / 2);
+        a[k] = cluster_data[k].nelems <= 1 ? 0 : a[k] / narista;
     }
 
     // aproximar b[i] de cada cluster
-    // Para el cluster b[0] <- tendrá la media de las distancias genéticas
-    // con el resto de centroides (nclusters - 1, él mismo)
     for(int k = 0; k < nclusters; k++){
         for(int j = 0; j < nclusters; j++){
-            //printf("\nDISTANCE FROM BIG B: %f\n", (float)genecticdist(centroids[k], centroids[j]));
-            b[k] += (float) genecticdist(centroids[k], centroids[j]);
-            //printf("\nafter: %f\n", b[k]);
+            b[k] += (float) geneticdist(centroids[k], centroids[j]); // Cuando k = j -> geneticdist = 0.
         }
-
         b[k] /=  (float)(nclusters - 1);
     }
 
-    float max, s = 0;
+    float max, sil = 0.0f;
     for(int k = 0; k < nclusters; k++){
-        max = MAX(a[k], b[k]);
-        if(max != 0){
-            //printf("\na[%i]=%f, b[%i]=%f\n", k, a[k], k, b[k]);
-            s += (b[k] - a[k]) / max;
-        }
+        max = a[k] >= b[k] ? a[k] : b[k];
+        if(max != 0.0f)
+            sil += a[k];
     }
 
-    printf("SILHOUETEE: s=%f, nclusters=%i Calidad de cluster: %f", s, nclusters, (double)s / nclusters);
-    return (double)s / nclusters;
+    printf("\nSILHOUETEE: s=%f, nclusters=%i Calidad de cluster: %f\n", sil, nclusters, (double)(sil / (float)nclusters));
+    return (double)(sil / (float)nclusters);
 }
 
 /********************************************************************************************
@@ -118,7 +102,7 @@ double silhouette_simple(float samples[][NCAR], struct lista_grupos *cluster_dat
              enf      enfermedades, una matriz de tamaño MAXE x TENF, por referencia
    Salida:   prob_enf vector de TENF structs (informacion del análisis realizado), por ref.
 *****************************************************************************************/
-void analisis_enfermedades(struct lista_grupos *listag, float enf[][TENF], struct analisis *prob_enf)
+void analisis_enfermedades(struct lista_grupos *cluster_data, float enf[][TENF], struct analisis *prob_enf)
 {
 	// PARA COMPLETAR
 	// Realizar el análisis de enfermedades en los grupos:
@@ -143,7 +127,7 @@ void inicializar_centroides(float cent[][NCAR]){
 		}
 }
 
-int nuevos_centroides(float elem[][NCAR], float cent[][NCAR], int popul[], int nelem){
+int nuevos_centroides(float elem[][NCAR], float cent[][NCAR], int samples[], int nelem){
     //printf("\n NEW CENCTROIDSS \n");
 	int i, j, fin;
 	double discent;
@@ -156,8 +140,8 @@ int nuevos_centroides(float elem[][NCAR], float cent[][NCAR], int popul[], int n
 
 	// acumular los valores de cada caracteristica (100); numero de elementos al final
 	for (i=0; i<nelem; i++){
-		for (j=0; j<NCAR; j++) additions[popul[i]][j] += elem[i][j];
-		additions[popul[i]][NCAR]++;
+		for (j=0; j<NCAR; j++) additions[samples[i]][j] += elem[i][j];
+		additions[samples[i]][NCAR]++;
 	}
 
 	// calcular los nuevos centroides y decidir si el proceso ha finalizado o no (en funcion de DELTA)
@@ -169,7 +153,7 @@ int nuevos_centroides(float elem[][NCAR], float cent[][NCAR], int popul[], int n
 				newcent[i][j] = (float)(additions[i][j] / additions[i][NCAR]);
 
 			// decidir si el proceso ha finalizado
-			discent = genecticdist(&newcent[i][0], &cent[i][0]);
+			discent = geneticdist(&newcent[i][0], &cent[i][0]);
 			if (discent > DELTA1)
 				fin = 0;  // en alguna centroide hay cambios; continuar
 
