@@ -10,6 +10,8 @@
 #include "defineg.h"           // definiciones
 
 
+// Ahora utilizamos algoritmo de burbuja para el ordenado, pero lo reemplazaremos por
+// Quicksort en breves.
 float sort_and_median(int n, float* disease_data){
 
     float tmp;
@@ -114,7 +116,7 @@ double silhouette_simple(float samples[][NCAR], struct lista_grupos *cluster_dat
             sil += (b[k]-a[k])/max;
     }
 
-    printf("\nSILHOUETEE: s=%f, nclusters=%i Calidad de cluster: %f\n", sil, nclusters, (double)(sil / (float)nclusters));
+    //printf("\nSILHOUETEE: s=%f, nclusters=%i Calidad de cluster: %f\n", sil, nclusters, (double)(sil / (float)nclusters));
     return (double)(sil / (float)nclusters);
 }
 
@@ -126,10 +128,7 @@ double silhouette_simple(float samples[][NCAR], struct lista_grupos *cluster_dat
 *****************************************************************************************/
 void analisis_enfermedades(struct lista_grupos *cluster_data, float enf[][TENF], struct analisis *analysis)
 {
-    // Ahora utilizamos algoritmo de burbuja para el ordenado, pero lo reemplazaremos por
-    // Quicksort en breves.
-
-    int cluster_size = 0;
+    int cluster_size;
     float medians[nclusters][TENF];
 
     for(int i = 0; i < nclusters; i++)
@@ -137,9 +136,8 @@ void analisis_enfermedades(struct lista_grupos *cluster_data, float enf[][TENF],
             medians[i][j] = 0.0f;
 
     for(int k = 0; k < nclusters; k++){
+        cluster_size = cluster_data[k].nelems;
         for(int i = 0; i < TENF; i++){
-
-            cluster_size = cluster_data[k].nelems;
             float disease_data[cluster_size];
             for(int n = 0; n < cluster_size; n++) disease_data[n] = 0.0f;
 
@@ -165,8 +163,7 @@ void analisis_enfermedades(struct lista_grupos *cluster_data, float enf[][TENF],
         for(int k = 0; k < nclusters; k++){
             median = medians[k][j];
 
-            // Cambiar esto, roundf falla en muchos casos.
-            if(roundf(median) > 0 && (median < analysis[j].mmin)){
+            if(median < analysis[j].mmin){
                 analysis[j].mmin = median;
                 analysis[j].gmin = k;
             }
