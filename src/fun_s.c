@@ -12,7 +12,21 @@
 
 float sort_and_median(int n, float* disease_data){
 
-    return 0.0f;
+    float tmp;
+    for(int i = 0; i < n - 1; i++){
+        for(int j = 0; j < n - i - 1; j++){
+            if(disease_data[j] > disease_data[j+1]){
+                tmp = disease_data[j+1];
+                disease_data[j+1] = disease_data[j];
+                disease_data[j] = tmp;
+            }
+        }
+    }
+    /*for(int i=0; i < n; i++){
+        printf("\ndisease_data[%i]=%f\n", i, disease_data[i]);
+    }
+    printf("\nMEDIAN[%i] (n=%i): %f\n", (n % 2 == 0) ? (n/2)-1 : ((n+1)/2)-1, n, (n % 2 == 0) ? disease_data[(n/2)-1] : disease_data[((n+1)/2)-1]);*/
+    return (n % 2 == 0) ? disease_data[(n/2)-1] : disease_data[((n+1)/2)-1];
 }
 
 
@@ -43,7 +57,7 @@ void nearest_cluster(int nelem, float elem[][NCAR], float cent[][NCAR], int *sam
 	double dist, mindist;
 
 	for(int i = 0; i < nelem; i++){
-        mindist = __DBL_MAX__;
+        mindist = DBL_MAX;
 		for(int k = 0; k < nclusters; k++) {
 			dist = geneticdist(elem[i], cent[k]);
 			if(dist < mindist){
@@ -110,16 +124,16 @@ double silhouette_simple(float samples[][NCAR], struct lista_grupos *cluster_dat
              enf      enfermedades, una matriz de tamaño MAXE x TENF, por referencia
    Salida:   prob_enf vector de TENF structs (informacion del análisis realizado), por ref.
 *****************************************************************************************/
-void analisis_enfermedades(struct lista_grupos *cluster_data, float enf[][TENF], struct analisis *data)
+void analisis_enfermedades(struct lista_grupos *cluster_data, float enf[][TENF], struct analisis *analysis)
 {
     // Ahora utilizamos algoritmo de burbuja para el ordenado, pero lo reemplazaremos por
     // Quicksort en breves.
 
     int cluster_size = 0;
-    float medians[TENF][nclusters];
+    float medians[nclusters][TENF];
 
-    for(int i = 0; i < TENF; i++)
-        for(int j = 0; j < nclusters; j++)
+    for(int i = 0; i < nclusters; i++)
+        for(int j = 0; j < TENF; j++)
             medians[i][j] = 0.0f;
 
     for(int k = 0; k < nclusters; k++){
@@ -132,23 +146,33 @@ void analisis_enfermedades(struct lista_grupos *cluster_data, float enf[][TENF],
             for(int j = 0; j < cluster_size; j++)
                 disease_data[j] = enf[cluster_data[k].elem_index[j]][i];
 
-            medians[i][k] = sort_and_median(cluster_size, disease_data);
+            medians[k][i] = sort_and_median(cluster_size, disease_data);
         }
     }
 
-    float median = 0.0f;
-    for(int i = 0; i < TENF; i++){
-        data[i].mmin = 0;
-        data[i].mmax = __DBL_MAX__;
+    float median;
+    /*for(int k = 0; k < nclusters; k++){
+        printf("Cluster %i -> ", k);
+        for(int j = 0; j < TENF; j++){
+            printf("%f ", medians[k][j]);
+        }
+        printf("\n");
+    }*/
+
+    for(int j = 0; j < TENF; j++){
+        analysis[j].mmin = FLT_MAX;
+        analysis[j].mmax = 0;
         for(int k = 0; k < nclusters; k++){
-            median = medians[i][k];
-            if(median < data[i].mmin){
-                data[i].mmin = median;
-                data[i].gmin = k;
+            median = medians[k][j];
+
+            // Cambiar esto, roundf falla en muchos casos.
+            if(roundf(median) > 0 && (median < analysis[j].mmin)){
+                analysis[j].mmin = median;
+                analysis[j].gmin = k;
             }
-            if(median > data[i].mmax){
-                data[i].mmax = median;
-                data[i].gmax = k;
+            if(median > analysis[j].mmax){
+                analysis[j].mmax = median;
+                analysis[j].gmax = k;
             }
         }
     }

@@ -9,5 +9,5 @@ extern int nuevos_centroides(float elem[][NCAR], float cent[][NCAR], int samples
 extern double geneticdist (float *elem1, float *elem2);
 extern void nearest_cluster (int nelem, float elem[][NCAR], float cent[][NCAR], int *samples);
 extern double silhouette_simple(float samples[][NCAR], struct lista_grupos *cluster_data, float centroids[][NCAR], float a[]);
-extern void analisis_enfermedades (struct lista_grupos *listag, float enf[][TENF], struct analisis *prob_enf);
+extern void analisis_enfermedades (struct lista_grupos *listag, float enf[][TENF], struct analisis *analysis);
 extern float sort_and_median(int n, float* disease_data);
