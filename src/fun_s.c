@@ -12,25 +12,21 @@
 
 // Ahora utilizamos algoritmo de burbuja para el ordenado, pero lo reemplazaremos por
 // Quicksort en breves.
-float sort_and_median(int n, float* disease_data, int cluster, int enf){
-
+float sort_and_median(int n, float* disease_data)
+{
     float tmp;
-    for(int i = 0; i < n; i++){
-        for(int j = 0; j < n - i; j++){
-            if(disease_data[j] > disease_data[j+1]){
-                tmp = disease_data[j+1];
-                disease_data[j+1] = disease_data[j];
+
+    for(int i = 0; i < n - 1; i++) {
+        for (int j = 0; j < n - i - 1; j++) {
+            if (disease_data[j] > disease_data[j + 1]) {
+                tmp = disease_data[j + 1];
+                disease_data[j + 1] = disease_data[j];
                 disease_data[j] = tmp;
             }
         }
     }
-        printf("\n SORTING: Cluster %i (enfermedad: %i) |", cluster, enf);
-        for(int i=0; i < n; i++){
-            printf("%f, ", disease_data[i]);
-        }
 
-    //printf("\nMEDIAN[%i] (n=%i): %f\n", (n % 2 == 0) ? (n/2)-1 : ((n+1)/2)-1, n, (n % 2 == 0) ? disease_data[(n/2)-1] : disease_data[((n+1)/2)-1]);
-    return (n % 2 == 0) ? disease_data[(n/2)-1] : disease_data[((n+1)/2)-1];
+    return disease_data[n/2];
 }
 
 
@@ -83,6 +79,7 @@ void nearest_cluster(int nelem, float elem[][NCAR], float cent[][NCAR], int *sam
    Salida:   valor del CVI (double): calidad/ bondad de la particion de clusters
 *****************************************************************************************/
 double silhouette_simple(float samples[][NCAR], struct lista_grupos *cluster_data, float centroids[][NCAR], float a[]){
+
     float b[nclusters];
     for(int k = 0; k < nclusters; k++) b[k] = 0.0f;
     for(int k = 0; k < MAX_GRUPOS; k++) a[k] = 0.0f;
@@ -118,7 +115,6 @@ double silhouette_simple(float samples[][NCAR], struct lista_grupos *cluster_dat
             sil += (b[k]-a[k])/max;
     }
 
-    //printf("\nSILHOUETEE: s=%f, nclusters=%i Calidad de cluster: %f\n", sil, nclusters, (double)(sil / (float)nclusters));
     return (double)(sil / (float)nclusters);
 }
 
@@ -131,59 +127,42 @@ double silhouette_simple(float samples[][NCAR], struct lista_grupos *cluster_dat
 void analisis_enfermedades(struct lista_grupos *cluster_data, float enf[][TENF], struct analisis *analysis)
 {
     int cluster_size;
-    float medians[nclusters][TENF];
+    float median;
+    float *disease_data;
 
-    for(int k = 0; k < nclusters; k++)
-        for(int j = 0; j < TENF; j++)
-            medians[k][j] = 0.0f;
+    for(int i = 0; i < TENF; i++){
+        analysis[i].mmin = FLT_MAX;
+        analysis[i].mmax = 0.0f;
+    }
 
     for(int k = 0; k < nclusters; k++){
         cluster_size = cluster_data[k].nelems;
-        for(int i = 0; i < TENF; i++){
-            float disease_data[cluster_size];
-            for(int n = 0; n < cluster_size; n++) disease_data[n] = 0.0f;
 
-            for(int j = 0; j < cluster_size; j++){
-                disease_data[j] = enf[cluster_data[k].elem_index[j]][i];
-                if(i==2)
-                    printf("C: %i - E: %i - M: %i (index=%i) -- P: %f || \n", k, i, j, cluster_data[k].elem_index[j], disease_data[j]);
-            }
-            medians[k][i] = sort_and_median(cluster_size, disease_data, k, i);
-            if(i==2)
-                printf("\nPara cluster %i y enfermedad %i, la mediana es: %f\n", k, i, medians[k][i]);
-        }
-    }
-
-    float median;
-    /*float medianMayor = 0;
-    int grupoMayor = -1;
-    for(int k = 0; k < nclusters; k++){
-        //printf("Cluster %i -> ", k);
         for(int j = 0; j < TENF; j++){
-            if(j==0){
-                if(medians[k][j] >= medianMayor){
-                    medianMayor = medians[k][j];
-                    grupoMayor = k;
-                }
-                printf("\nMEDIAN DATA - Cluster %i %f [Median mayor=%f, cluster=%i]\n", k, medians[k][j], medianMayor, grupoMayor);
-            }
-        }
-        printf("\n");
-    }*/
-    for(int j = 0; j < TENF; j++){
-        analysis[j].mmin = FLT_MAX;
-        analysis[j].mmax = 0;
-        for(int k = 0; k < nclusters; k++){
-            median = medians[k][j];
+            disease_data = malloc(sizeof(float) * cluster_size);
+            for(int i = 0; i < cluster_size; i++) disease_data[i] = 0.0f;
 
-            if(median < analysis[j].mmin){
-                analysis[j].mmin = median;
-                analysis[j].gmin = k;
-            }
+            // Para cada enfermedad, recorro todos las muestras del clúster
+            // recogiendo sus datos.
+            for(int i = 0; i < cluster_size; i++)
+                disease_data[i] = enf[cluster_data[k].elem_index[i]][j];
+
+            // Tengo el array para ésta enfermedad en éste clúster.
+            // Solo me queda ordenar y calcular la mediana.
+            median = sort_and_median(cluster_size, disease_data);
+
+            //Ya tengo la median para ésta enfermedad y éste clúster.
             if(median > analysis[j].mmax){
                 analysis[j].mmax = median;
                 analysis[j].gmax = k;
             }
+
+            if(median > 0 && median < analysis[j].mmin){
+                analysis[j].mmin = median;
+                analysis[j].gmin = k;
+            }
+
+            free(disease_data); // Para cada enfermedad
         }
     }
 }
