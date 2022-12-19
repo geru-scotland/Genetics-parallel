@@ -1,5 +1,5 @@
 /*
-    AC - OpenMP -- SERIE
+    AC - OpenMP -- PARALELO
     fun_s.c
      rutinas que se utilizan en el modulo gengrupos_s.c
 ****************************************************************************/

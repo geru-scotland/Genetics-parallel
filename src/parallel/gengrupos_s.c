@@ -1,8 +1,6 @@
-// head -n+1001 dbenf.dat > dbenf1000.dat
-// head -n+1001 dbgen.dat > dbgen1000.dat
-// ./gengrupos ./data/dbgen1000.dat ./data/dbenf1000.dat 1000
+
 /*
-    gengrupos_s.c   SERIE
+    gengrupos_p.c   PARALELO
 
     Entrada: dbgen.dat    fichero con la informacion genetica de cada muestra
              dbenf.dat    fichero con la informacion sobre las enfermedades de cada muestra
@@ -48,7 +46,7 @@ int main (int argc, char *argv[]) {
 	}
 
 	setbuf(stdout, NULL);
-	printf ("\n*** Ejecucion en serie ***\n\n");
+	printf ("\n*** Ejecucion en paralelo ***\n\n");
 	clock_gettime (CLOCK_REALTIME, &t1);
 
 
