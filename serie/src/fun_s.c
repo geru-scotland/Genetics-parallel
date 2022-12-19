@@ -42,7 +42,7 @@ double geneticdist(float *elem1, float *elem2)
     for(int i = 0; i < NCAR; i++)
         total += pow((double)(elem2[i] - elem1[i]), 2);
 
-	return sqrt(total);
+    return sqrt(total);
 }
 
 /****************************************************************************************
@@ -54,18 +54,18 @@ double geneticdist(float *elem1, float *elem2)
 *****************************************************************************************/
 void nearest_cluster(int nelem, float elem[][NCAR], float cent[][NCAR], int *samples)
 {
-	double dist, mindist;
+    double dist, mindist;
 
-	for(int i = 0; i < nelem; i++){
+    for(int i = 0; i < nelem; i++){
         mindist = DBL_MAX;
-		for(int k = 0; k < nclusters; k++) {
-			dist = geneticdist(elem[i], cent[k]);
-			if(dist < mindist){
-				mindist = dist;
+        for(int k = 0; k < nclusters; k++) {
+            dist = geneticdist(elem[i], cent[k]);
+            if(dist < mindist){
+                mindist = dist;
                 samples[i] = k;
-			}
-		}
-	}
+            }
+        }
+    }
 }
 
 
@@ -83,9 +83,11 @@ double silhouette_simple(float samples[][NCAR], struct lista_grupos *cluster_dat
     float b[nclusters];
     for(int k = 0; k < nclusters; k++) b[k] = 0.0f;
     for(int k = 0; k < MAX_GRUPOS; k++) a[k] = 0.0f;
+    omp_set_num_threads(16);
     // Me baso en teoría de grafos para obtener el peso total de las distancias
     // Según se va avanzando, únicamente tengo en cuenta las distancias
     // con elementos posicionados en posiciones mayores que la actual.
+#pragma omp parallel for default(none) firstprivate(nclusters), shared(cluster_data, samples, a)
     for(int k = 0; k < nclusters; k++){
         for(int i = 0; i < cluster_data[k].nelems; i++){
             for(int j = i + 1; j < cluster_data[k].nelems; j++){
@@ -173,49 +175,49 @@ void analisis_enfermedades(struct lista_grupos *cluster_data, float enf[][TENF],
 
 void inicializar_centroides(float cent[][NCAR]){
     //printf("\n CENTROID INITS \n");
-	int i, j;
-	srand (147);
-	for (i=0; i < nclusters; i++)
-		for (j=0; j<NCAR/2; j++){
-			cent[i][j] = (rand() % 10000) / 100.0;
-			cent[i][j+(NCAR/2)] = cent[i][j];
-		}
+    int i, j;
+    srand (147);
+    for (i=0; i < nclusters; i++)
+        for (j=0; j<NCAR/2; j++){
+            cent[i][j] = (rand() % 10000) / 100.0;
+            cent[i][j+(NCAR/2)] = cent[i][j];
+        }
 }
 
 int nuevos_centroides(float elem[][NCAR], float cent[][NCAR], int samples[], int nelem){
     //printf("\n NEW CENCTROIDSS \n");
-	int i, j, fin;
-	double discent;
-	double additions[nclusters][NCAR + 1];
-	float newcent[nclusters][NCAR];
+    int i, j, fin;
+    double discent;
+    double additions[nclusters][NCAR + 1];
+    float newcent[nclusters][NCAR];
 
-	for (i=0; i < nclusters; i++)
-		for (j=0; j<NCAR+1; j++)
-			additions[i][j] = 0.0;
+    for (i=0; i < nclusters; i++)
+        for (j=0; j<NCAR+1; j++)
+            additions[i][j] = 0.0;
 
-	// acumular los valores de cada caracteristica (100); numero de elementos al final
-	for (i=0; i<nelem; i++){
-		for (j=0; j<NCAR; j++) additions[samples[i]][j] += elem[i][j];
-		additions[samples[i]][NCAR]++;
-	}
+    // acumular los valores de cada caracteristica (100); numero de elementos al final
+    for (i=0; i<nelem; i++){
+        for (j=0; j<NCAR; j++) additions[samples[i]][j] += elem[i][j];
+        additions[samples[i]][NCAR]++;
+    }
 
-	// calcular los nuevos centroides y decidir si el proceso ha finalizado o no (en funcion de DELTA)
-	fin = 1;
-	for (i=0; i < nclusters; i++){
-		if (additions[i][NCAR] > 0) { // ese grupo (cluster) no esta vacio
-			// media de cada caracteristica
-			for (j=0; j<NCAR; j++)
-				newcent[i][j] = (float)(additions[i][j] / additions[i][NCAR]);
+    // calcular los nuevos centroides y decidir si el proceso ha finalizado o no (en funcion de DELTA)
+    fin = 1;
+    for (i=0; i < nclusters; i++){
+        if (additions[i][NCAR] > 0) { // ese grupo (cluster) no esta vacio
+            // media de cada caracteristica
+            for (j=0; j<NCAR; j++)
+                newcent[i][j] = (float)(additions[i][j] / additions[i][NCAR]);
 
-			// decidir si el proceso ha finalizado
-			discent = geneticdist(&newcent[i][0], &cent[i][0]);
-			if (discent > DELTA1)
-				fin = 0;  // en alguna centroide hay cambios; continuar
+            // decidir si el proceso ha finalizado
+            discent = geneticdist(&newcent[i][0], &cent[i][0]);
+            if (discent > DELTA1)
+                fin = 0;  // en alguna centroide hay cambios; continuar
 
-			// copiar los nuevos centroides
-			for (j=0; j<NCAR; j++)
-				cent[i][j] = newcent[i][j];
-		}
-	}
-	return fin;
+            // copiar los nuevos centroides
+            for (j=0; j<NCAR; j++)
+                cent[i][j] = newcent[i][j];
+        }
+    }
+    return fin;
 }
