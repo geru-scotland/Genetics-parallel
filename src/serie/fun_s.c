@@ -86,11 +86,12 @@ double silhouette_simple(float samples[][NCAR], struct lista_grupos *cluster_dat
     // Me baso en teoría de grafos para obtener el peso total de las distancias
     // Según se va avanzando, únicamente tengo en cuenta las distancias
     // con elementos posicionados en posiciones mayores que la actual.
-
+    double tmp;
     for(int k = 0; k < nclusters; k++){
+        tmp = 0;
         for(int i = 0; i < cluster_data[k].nelems; i++){
             for(int j = i + 1; j < cluster_data[k].nelems; j++){
-                a[k] += (float) geneticdist(samples[cluster_data[k].elem_index[i]],
+                tmp += geneticdist(samples[cluster_data[k].elem_index[i]],
                                             samples[cluster_data[k].elem_index[j]]);
             }
         }
@@ -98,7 +99,7 @@ double silhouette_simple(float samples[][NCAR], struct lista_grupos *cluster_dat
         // medidas para los n elementos de cada clúster. n(n-1)/2.
         // Equivale al Cálculo de aristas totales para un grafo completo.
         float narista = ((float)(cluster_data[k].nelems * (cluster_data[k].nelems - 1)) / 2);
-        a[k] = cluster_data[k].nelems <= 1 ? 0 : a[k] / narista;
+        a[k] = cluster_data[k].nelems <= 1 ? 0 : (float)(tmp / narista);
     }
 
     // aproximar b[i] de cada cluster
