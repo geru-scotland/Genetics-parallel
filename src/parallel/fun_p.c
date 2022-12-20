@@ -85,7 +85,7 @@ void nearest_cluster(int nelem, float elem[][NCAR], float cent[][NCAR], int *sam
 double silhouette_simple(float samples[][NCAR], struct lista_grupos *cluster_data, float centroids[][NCAR], float a[]){
 
     float b[nclusters];
-    float narista;
+    double tmp;
 
     for(int k = 0; k < nclusters; k++) b[k] = 0.0f;
     for(int k = 0; k < MAX_GRUPOS; k++) a[k] = 0.0f;
@@ -94,17 +94,18 @@ double silhouette_simple(float samples[][NCAR], struct lista_grupos *cluster_dat
     // con elementos posicionados en posiciones mayores que la actual.
 //#pragma omp for nowait private(nclusters, narista) schedule(static)
     for(int k = 0; k < nclusters; k++){
+        tmp = 0;
         for(int i = 0; i < cluster_data[k].nelems; i++){
             for(int j = i + 1; j < cluster_data[k].nelems; j++){
-                a[k] += (float) geneticdist(samples[cluster_data[k].elem_index[i]],
-                                            samples[cluster_data[k].elem_index[j]]);
+                tmp += geneticdist(samples[cluster_data[k].elem_index[i]],
+                                   samples[cluster_data[k].elem_index[j]]);
             }
         }
 
         // medidas para los n elementos de cada clúster. n(n-1)/2.
         // Equivale al Cálculo de aristas totales para un grafo completo.
-        narista = ((float)(cluster_data[k].nelems * (cluster_data[k].nelems - 1)) / 2);
-        a[k] = cluster_data[k].nelems <= 1 ? 0 : a[k] / narista;
+        float narista = ((float)(cluster_data[k].nelems * (cluster_data[k].nelems - 1)) / 2);
+        a[k] = cluster_data[k].nelems <= 1 ? 0 : (float)(tmp / narista);
     }
 
     // aproximar b[i] de cada cluster
