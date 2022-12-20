@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.23)
+cmake_minimum_required(VERSION 3.12.1)
 project(genetics C)
 
 set(CMAKE_C_STANDARD 11)
@@ -6,15 +6,15 @@ set(CMAKE_C_STANDARD 11)
 include_directories(include)
 
 add_subdirectory(src/serie/
-        src/parallel/)
+                 src/parallel/)
 
 add_executable(genetics_s
         src/serie/fun_s.c
         src/serie/gengrupos_s.c)
 
 add_executable(genetics_p
-        src/parallel/fun_s.c
-        src/parallel/gengrupos_s.c)
+        src/parallel/fun_p.c
+        src/parallel/gengrupos_p.c)
 
 find_package(OpenMP)
 if (OPENMP_FOUND)

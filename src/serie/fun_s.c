@@ -83,11 +83,10 @@ double silhouette_simple(float samples[][NCAR], struct lista_grupos *cluster_dat
     float b[nclusters];
     for(int k = 0; k < nclusters; k++) b[k] = 0.0f;
     for(int k = 0; k < MAX_GRUPOS; k++) a[k] = 0.0f;
-    omp_set_num_threads(16);
     // Me baso en teoría de grafos para obtener el peso total de las distancias
     // Según se va avanzando, únicamente tengo en cuenta las distancias
     // con elementos posicionados en posiciones mayores que la actual.
-#pragma omp parallel for default(none) firstprivate(nclusters), shared(cluster_data, samples, a)
+
     for(int k = 0; k < nclusters; k++){
         for(int i = 0; i < cluster_data[k].nelems; i++){
             for(int j = i + 1; j < cluster_data[k].nelems; j++){
