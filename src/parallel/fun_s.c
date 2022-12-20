@@ -56,14 +56,17 @@ double geneticdist(float *elem1, float *elem2)
 void nearest_cluster(int nelem, float elem[][NCAR], float cent[][NCAR], int *samples)
 {
     double dist, mindist;
-
-    for(int i = 0; i < nelem; i++){
-        mindist = DBL_MAX;
-        for(int k = 0; k < nclusters; k++) {
-            dist = geneticdist(elem[i], cent[k]);
-            if(dist < mindist){
-                mindist = dist;
-                samples[i] = k;
+#pragma omp parallel default(none) private(dist, mindist) shared(nclusters, nelem, elem, cent, samples)
+    {
+#pragma omp for nowait
+        for(int i = 0; i < nelem; i++){
+            mindist = DBL_MAX;
+            for(int k = 0; k < nclusters; k++) {
+                dist = geneticdist(elem[i], cent[k]);
+                if(dist < mindist){
+                    mindist = dist;
+                    samples[i] = k;
+                }
             }
         }
     }
@@ -82,13 +85,14 @@ void nearest_cluster(int nelem, float elem[][NCAR], float cent[][NCAR], int *sam
 double silhouette_simple(float samples[][NCAR], struct lista_grupos *cluster_data, float centroids[][NCAR], float a[]){
 
     float b[nclusters];
+    float narista;
+
     for(int k = 0; k < nclusters; k++) b[k] = 0.0f;
     for(int k = 0; k < MAX_GRUPOS; k++) a[k] = 0.0f;
-    omp_set_num_threads(16);
     // Me baso en teoría de grafos para obtener el peso total de las distancias
     // Según se va avanzando, únicamente tengo en cuenta las distancias
     // con elementos posicionados en posiciones mayores que la actual.
-#pragma omp parallel for default(none) firstprivate(nclusters), shared(cluster_data, samples, a)
+//#pragma omp for nowait private(nclusters, narista) schedule(static)
     for(int k = 0; k < nclusters; k++){
         for(int i = 0; i < cluster_data[k].nelems; i++){
             for(int j = i + 1; j < cluster_data[k].nelems; j++){
@@ -99,7 +103,7 @@ double silhouette_simple(float samples[][NCAR], struct lista_grupos *cluster_dat
 
         // medidas para los n elementos de cada clúster. n(n-1)/2.
         // Equivale al Cálculo de aristas totales para un grafo completo.
-        float narista = ((float)(cluster_data[k].nelems * (cluster_data[k].nelems - 1)) / 2);
+        narista = ((float)(cluster_data[k].nelems * (cluster_data[k].nelems - 1)) / 2);
         a[k] = cluster_data[k].nelems <= 1 ? 0 : a[k] / narista;
     }
 
@@ -192,33 +196,36 @@ int nuevos_centroides(float elem[][NCAR], float cent[][NCAR], int samples[], int
     double additions[nclusters][NCAR + 1];
     float newcent[nclusters][NCAR];
 
-    for (i=0; i < nclusters; i++)
-        for (j=0; j<NCAR+1; j++)
+
+    for (i = 0; i < nclusters; i++)
+        for (j = 0; j < NCAR + 1; j++)
             additions[i][j] = 0.0;
-
-    // acumular los valores de cada caracteristica (100); numero de elementos al final
-    for (i=0; i<nelem; i++){
-        for (j=0; j<NCAR; j++) additions[samples[i]][j] += elem[i][j];
-        additions[samples[i]][NCAR]++;
-    }
-
-    // calcular los nuevos centroides y decidir si el proceso ha finalizado o no (en funcion de DELTA)
-    fin = 1;
-    for (i=0; i < nclusters; i++){
-        if (additions[i][NCAR] > 0) { // ese grupo (cluster) no esta vacio
-            // media de cada caracteristica
-            for (j=0; j<NCAR; j++)
-                newcent[i][j] = (float)(additions[i][j] / additions[i][NCAR]);
-
-            // decidir si el proceso ha finalizado
-            discent = geneticdist(&newcent[i][0], &cent[i][0]);
-            if (discent > DELTA1)
-                fin = 0;  // en alguna centroide hay cambios; continuar
-
-            // copiar los nuevos centroides
-            for (j=0; j<NCAR; j++)
-                cent[i][j] = newcent[i][j];
+        // acumular los valores de cada caracteristica (100); numero de elementos al final
+#pragma omp for nowait
+        for (i = 0; i < nelem; i++) {
+            for (j = 0; j < NCAR; j++) additions[samples[i]][j] += elem[i][j];
+            additions[samples[i]][NCAR]++;
         }
-    }
-    return fin;
+
+        // calcular los nuevos centroides y decidir si el proceso ha finalizado o no (en funcion de DELTA)
+        fin = 1;
+
+#pragma omp for nowait private(discent)
+        for (i = 0; i < nclusters; i++) {
+            if (additions[i][NCAR] > 0) { // ese grupo (cluster) no esta vacio
+                // media de cada caracteristica
+                for (j = 0; j < NCAR; j++)
+                    newcent[i][j] = (float) (additions[i][j] / additions[i][NCAR]);
+
+                // decidir si el proceso ha finalizado
+                discent = geneticdist(&newcent[i][0], &cent[i][0]);
+                if (discent > DELTA1)
+                    fin = 0;  // en alguna centroide hay cambios; continuar
+
+                // copiar los nuevos centroides
+                for (j = 0; j < NCAR; j++)
+                    cent[i][j] = newcent[i][j];
+            }
+        }
+        return fin;
 }

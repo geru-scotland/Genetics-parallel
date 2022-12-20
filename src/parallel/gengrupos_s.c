@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <omp.h>
 
 #include "defineg.h"
 #include "fun.h"
@@ -27,48 +28,47 @@ int nclusters = 35;
 // ==================
 
 int main (int argc, char *argv[]) {
-	float   a[MAX_GRUPOS]; // densidad de cada cluster
-	int     popul[MAXE]; // grupo de cada elemento
-	float   cent[MAX_GRUPOS][NCAR]; // centroides
-	int     i, j, nelem, grupo, num, ind;
-	int     fin = 0, num_ite = 0;
-	int     convergencia_cont;
-	double  sil, sil_old, diff;
+    float a[MAX_GRUPOS]; // densidad de cada cluster
+    int popul[MAXE]; // grupo de cada elemento
+    float cent[MAX_GRUPOS][NCAR]; // centroides
+    int i, j, nelem, grupo, num, ind;
+    int fin = 0, num_ite = 0;
+    int convergencia_cont;
+    double sil, sil_old, diff;
 
-	FILE   *fd;
-	struct timespec  t1, t2;
-	struct timespec  t11, t12, t17, t20, t21;
-	double texe, t_lec, t_clust, t_enf, t_escri;
+    FILE *fd;
+    struct timespec t1, t2;
+    struct timespec t11, t12, t17, t20, t21;
+    double texe, t_lec, t_clust, t_enf, t_escri;
 
-	if ((argc < 3)  || (argc > 4)) {
-		printf ("[!] ERROR:  gengrupos bd_muestras bd_enfermedades [num_elem]\n");
-		exit (-1);
-	}
+    if ((argc < 3) || (argc > 4)) {
+        printf("[!] ERROR:  gengrupos bd_muestras bd_enfermedades [num_elem]\n");
+        exit(-1);
+    }
 
-	setbuf(stdout, NULL);
-	printf ("\n*** Ejecucion en paralelo ***\n\n");
-	clock_gettime (CLOCK_REALTIME, &t1);
-
-
-	// lectura de datos (muestras): elem[i][j]
-	// =======================================
-	clock_gettime (CLOCK_REALTIME, &t11);
-	fd = fopen (argv[1], "r");
-	if (fd == NULL) {
-		printf ("[!] Error al abrir el fichero %s\n", argv[1]);
-		exit (-1);
-	}
-
-	fscanf (fd, "%d", &nelem);
-	if (argc == 4) nelem = atoi(argv[3]);	// 4. parametro: numero de elementos
-
-	for (i=0; i<nelem; i++)
-		for (j=0; j<NCAR; j++)
-			fscanf (fd, "%f", &(elem[i][j]));
-
-	fclose (fd);
+    setbuf(stdout, NULL);
+    printf("\n*** Ejecucion en paralelo ***\n\n");
+    clock_gettime(CLOCK_REALTIME, &t1);
 
 
+    // lectura de datos (muestras): elem[i][j]
+    // =======================================
+    clock_gettime(CLOCK_REALTIME, &t11);
+    fd = fopen(argv[1], "r");
+    if (fd == NULL) {
+        printf("[!] Error al abrir el fichero %s\n", argv[1]);
+        exit(-1);
+    }
+
+    fscanf(fd, "%d", &nelem);
+    if (argc == 4) nelem = atoi(argv[3]);    // 4. parametro: numero de elementos
+
+    for (i = 0; i < nelem; i++)
+        for (j = 0; j < NCAR; j++)
+            fscanf(fd, "%f", &(elem[i][j]));
+
+
+    fclose(fd);
 	// lectura de datos (enfermedades): enf[i][j]
 	// ==========================================
 
@@ -97,39 +97,49 @@ int main (int argc, char *argv[]) {
 		// ===============================================
 		num_ite = 0;
 		fin = 0;
-		while ((fin == 0) && (num_ite < MAXIT)) {
-			// calcular el grupo mas cercano
-            nearest_cluster(nelem, elem, cent, popul);
+        omp_set_num_threads(8);
+        while ((fin == 0) && (num_ite < MAXIT)) {
 
-			// calcular los nuevos centroides de los grupos
-			fin = nuevos_centroides(elem, cent, popul, nelem);
+                // OMP: Región paralela en nearest_cluster
+                // calcular el grupo mas cercano
+                nearest_cluster(nelem, elem, cent, popul);
 
-			num_ite++;
-		}
+                // calcular los nuevos centroides de los grupos
+                fin = nuevos_centroides(elem, cent, popul, nelem);
+
+                num_ite++;
+
+        }
+
+
 
 
 		// B. Calcular la "calidad" del agrupamiento
 		// ==========================================
 
 		// lista de clusters: numero de elementos y su clasificacion
-		for (i=0; i < nclusters; i++) cluster_data[i].nelems = 0;
-		for (i=0; i < nelem; i++){
-			grupo = popul[i];
-			num = cluster_data[grupo].nelems;
-            //printf("INSERTANDO DATO EN LISTA %f", elem[i][0]);
-			cluster_data[grupo].elem_index[num] = i;  // elementos de cada grupo (cluster)
-			cluster_data[grupo].nelems++;
-		}
 
-		// silhouette simple: calidad de la particion
-		sil = silhouette_simple(elem, cluster_data, cent, a);
+            for (i = 0; i < nclusters; i++) cluster_data[i].nelems = 0;
+            for (i = 0; i < nelem; i++) {
+                grupo = popul[i];
+                num = cluster_data[grupo].nelems;
+                //printf("INSERTANDO DATO EN LISTA %f", elem[i][0]);
 
-		// calcular la diferencia: estabilidad
-		diff = sil - sil_old;
-		if(diff < DELTA2) convergencia_cont++;
-		else convergencia_cont = 0;
-		sil_old = sil;
-        nclusters = nclusters + 10;
+                cluster_data[grupo].elem_index[num] = i;  // elementos de cada grupo (cluster)
+                cluster_data[grupo].nelems++;
+            }
+
+            // silhouette simple: calidad de la particion
+            sil = silhouette_simple(elem, cluster_data, cent, a);
+
+            // calcular la diferencia: estabilidad
+            diff = sil - sil_old;
+            if (diff < DELTA2) convergencia_cont++;
+            else convergencia_cont = 0;
+            sil_old = sil;
+            nclusters = nclusters + 10;
+
+
 	}
     nclusters = nclusters - 10;
 	clock_gettime (CLOCK_REALTIME, &t17);
