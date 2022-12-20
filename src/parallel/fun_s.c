@@ -137,39 +137,47 @@ void analisis_enfermedades(struct lista_grupos *cluster_data, float enf[][TENF],
     float median;
     float *disease_data;
 
-    for(int i = 0; i < TENF; i++){
-        analysis[i].mmin = FLT_MAX;
-        analysis[i].mmax = 0.0f;
-    }
+#pragma omp parallel default(none) shared (analysis, nclusters, cluster_size, cluster_data, disease_data, enf, median)
+    {
+#pragma omp for
+        for(int i = 0; i < TENF; i++){
+            analysis[i].mmin = FLT_MAX;
+            analysis[i].mmax = 0.0f;
+        }
 
-    for(int k = 0; k < nclusters; k++){
-        cluster_size = cluster_data[k].nelems;
+#pragma omp for
+        for(int k = 0; k < nclusters; k++){
+            cluster_size = cluster_data[k].nelems;
 
-        for(int j = 0; j < TENF; j++){
-            disease_data = malloc(sizeof(float) * cluster_size);
-            for(int i = 0; i < cluster_size; i++) disease_data[i] = 0.0f;
+            for(int j = 0; j < TENF; j++){
+                disease_data = malloc(sizeof(float) * cluster_size);
+                for(int i = 0; i < cluster_size; i++) disease_data[i] = 0.0f;
 
-            // Para cada enfermedad, recorro todos las muestras del clúster
-            // recogiendo sus datos.
-            for(int i = 0; i < cluster_size; i++)
-                disease_data[i] = enf[cluster_data[k].elem_index[i]][j];
+                // Para cada enfermedad, recorro todos las muestras del clúster
+                // recogiendo sus datos.
+                for(int i = 0; i < cluster_size; i++)
+                    disease_data[i] = enf[cluster_data[k].elem_index[i]][j];
 
-            // Tengo el array para ésta enfermedad en éste clúster.
-            // Solo me queda ordenar y calcular la mediana.
-            median = sort_and_median(cluster_size, disease_data);
+                // Tengo el array para ésta enfermedad en éste clúster.
+                // Solo me queda ordenar y calcular la mediana.
+                median = sort_and_median(cluster_size, disease_data);
 
-            //Ya tengo la median para ésta enfermedad y éste clúster.
-            if(median > analysis[j].mmax){
-                analysis[j].mmax = median;
-                analysis[j].gmax = k;
+                //Ya tengo la median para ésta enfermedad y éste clúster.
+#pragma omp critical
+                {
+                    if(median > analysis[j].mmax){
+                        analysis[j].mmax = median;
+                        analysis[j].gmax = k;
+                    }
+
+                    if(median > 0 && median < analysis[j].mmin){
+                        analysis[j].mmin = median;
+                        analysis[j].gmin = k;
+                    }
+                }
+
+                free(disease_data); // Para cada enfermedad
             }
-
-            if(median > 0 && median < analysis[j].mmin){
-                analysis[j].mmin = median;
-                analysis[j].gmin = k;
-            }
-
-            free(disease_data); // Para cada enfermedad
         }
     }
 }
