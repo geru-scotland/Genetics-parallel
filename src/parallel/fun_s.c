@@ -202,9 +202,11 @@ int nuevos_centroides(float elem[][NCAR], float cent[][NCAR], int samples[], int
             additions[i][j] = 0.0;
         // acumular los valores de cada caracteristica (100); numero de elementos al final
 #pragma omp for nowait
-        for (i = 0; i < nelem; i++) {
-            for (j = 0; j < NCAR; j++) additions[samples[i]][j] += elem[i][j];
-            additions[samples[i]][NCAR]++;
+    for (i = 0; i < nelem; i++) {
+        for (j = 0; j < NCAR; j++)
+            additions[samples[i]][j] += elem[i][j];
+
+        additions[samples[i]][NCAR]++;
         }
 
         // calcular los nuevos centroides y decidir si el proceso ha finalizado o no (en funcion de DELTA)

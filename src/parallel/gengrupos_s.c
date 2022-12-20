@@ -98,6 +98,7 @@ int main (int argc, char *argv[]) {
 		num_ite = 0;
 		fin = 0;
         omp_set_num_threads(8);
+
         while ((fin == 0) && (num_ite < MAXIT)) {
 
                 // OMP: Región paralela en nearest_cluster
@@ -111,9 +112,6 @@ int main (int argc, char *argv[]) {
 
         }
 
-
-
-
 		// B. Calcular la "calidad" del agrupamiento
 		// ==========================================
 
@@ -123,7 +121,6 @@ int main (int argc, char *argv[]) {
             for (i = 0; i < nelem; i++) {
                 grupo = popul[i];
                 num = cluster_data[grupo].nelems;
-                //printf("INSERTANDO DATO EN LISTA %f", elem[i][0]);
 
                 cluster_data[grupo].elem_index[num] = i;  // elementos de cada grupo (cluster)
                 cluster_data[grupo].nelems++;
@@ -147,40 +144,43 @@ int main (int argc, char *argv[]) {
 
 	// 2. fase: numero de elementos de cada grupo; analisis enfermedades
 	// ===========================================================================
+#pragma omp parallel default(none) private(t20, t21, t_enf, i, j, ind) shared(cent, cluster_data, enf, prob_enf, fd, nclusters)
+    {
 
-	// analisis de enfermedades
-	clock_gettime (CLOCK_REALTIME, &t20);
-	analisis_enfermedades (cluster_data, enf, prob_enf);
-	clock_gettime (CLOCK_REALTIME, &t21);
-	t_enf = (t21.tv_sec-t20.tv_sec) + (t21.tv_nsec-t20.tv_nsec)/(double)1e9;
 
-	// escritura de resultados en el fichero de salida
-	// ===============================================
+        // analisis de enfermedades
+        clock_gettime(CLOCK_REALTIME, &t20);
+        analisis_enfermedades(cluster_data, enf, prob_enf);
+        clock_gettime(CLOCK_REALTIME, &t21);
+        t_enf = (t21.tv_sec - t20.tv_sec) + (t21.tv_nsec - t20.tv_nsec) / (double) 1e9;
 
-	fd = fopen ("dbgen_s.out", "w");
-	if (fd == NULL) {
-		printf ("[!] Error al abrir el fichero dbgen_out.s\n");
-		exit (-1);
-	}
+        // escritura de resultados en el fichero de salida
+        // ===============================================
 
-	fprintf (fd,">> Centroides de los clusters\n\n");
-	for (i=0; i < nclusters; i++) {
-		for (j=0; j<NCAR; j++) fprintf (fd, "%7.3f", cent[i][j]);
-		fprintf (fd,"\n");
-	}
+        fd = fopen("dbgen_s.out", "w");
+        if (fd == NULL) {
+            printf("[!] Error al abrir el fichero dbgen_out.s\n");
+            exit(-1);
+        }
 
-	fprintf (fd, "\n\n>> Numero de clusteres: %d. Numero de elementos en cada cluster:\n\n", nclusters);
-	ind = 0;
-	for (i=0; i < nclusters / 10; i++) {
-		for (j=0; j<10; j++){
-			fprintf(fd, "%6d", cluster_data[ind].nelems);
-			ind++;
-		}
-		fprintf(fd, "\n");
-	}
-	for(i=ind; i < nclusters; i++) fprintf(fd, "%6d", cluster_data[i].nelems);
-	fprintf(fd, "\n");
+        fprintf(fd, ">> Centroides de los clusters\n\n");
+        for (i = 0; i < nclusters; i++) {
+            for (j = 0; j < NCAR; j++) fprintf(fd, "%7.3f", cent[i][j]);
+            fprintf(fd, "\n");
+        }
 
+        fprintf(fd, "\n\n>> Numero de clusteres: %d. Numero de elementos en cada cluster:\n\n", nclusters);
+        ind = 0;
+        for (i = 0; i < nclusters / 10; i++) {
+            for (j = 0; j < 10; j++) {
+                fprintf(fd, "%6d", cluster_data[ind].nelems);
+                ind++;
+            }
+            fprintf(fd, "\n");
+        }
+        for (i = ind; i < nclusters; i++) fprintf(fd, "%6d", cluster_data[i].nelems);
+        fprintf(fd, "\n");
+    }
 	fprintf (fd, "\n>> Densidad de los clusters: b[i]\n\n");
 	ind = 0;
 	for (i=0; i < nclusters / 10; i++) {
