@@ -173,7 +173,6 @@ void analisis_enfermedades(struct lista_grupos *cluster_data, float enf[][TENF],
 ****************************************************************************************************/
 
 void inicializar_centroides(float cent[][NCAR]){
-    //printf("\n CENTROID INITS \n");
     int i, j;
     srand (147);
     for (i=0; i < nclusters; i++)
@@ -184,7 +183,6 @@ void inicializar_centroides(float cent[][NCAR]){
 }
 
 int nuevos_centroides(float elem[][NCAR], float cent[][NCAR], int samples[], int nelem){
-    //printf("\n NEW CENCTROIDSS \n");
     int i, j, fin;
     double discent;
     double additions[nclusters][NCAR + 1];
