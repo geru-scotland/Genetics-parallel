@@ -158,9 +158,7 @@ void analisis_enfermedades(struct lista_grupos *cluster_data, float enf[][TENF],
             analysis[i].mmax = 0.0f;
         }
 
-#pragma omp barrier
-
-#pragma omp for private(cluster_size, disease_data, median)
+#pragma omp for  private(cluster_size, disease_data, median)
         for(int k = 0; k < nclusters; k++){
             cluster_size = cluster_data[k].nelems;
 
@@ -174,19 +172,20 @@ void analisis_enfermedades(struct lista_grupos *cluster_data, float enf[][TENF],
 
                 // Tengo el array para ésta enfermedad en éste clúster.
                 // Solo me queda ordenar y calcular la mediana.
-                median = sort_and_median(cluster_size, disease_data);
 
                 //Ya tengo la median para ésta enfermedad y éste clúster.
+
+                median = sort_and_median(cluster_size, disease_data);
 #pragma omp critical
                 {
-                    if(median > analysis[j].mmax){
+                if ((median > 0 && median < analysis[j].mmin) || ((median == analysis[j].mmin) && (k < analysis[j].gmin))){
+                    analysis[j].mmin = median;
+                    analysis[j].gmin = k;
+                }
+
+                if ((median > analysis[j].mmax) || ((median == analysis[j].mmax) && (k < analysis[j].gmax))){
                         analysis[j].mmax = median;
                         analysis[j].gmax = k;
-                    }
-
-                    if(median > 0 && median < analysis[j].mmin){
-                        analysis[j].mmin = median;
-                        analysis[j].gmin = k;
                     }
                 }
 

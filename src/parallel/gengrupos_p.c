@@ -182,7 +182,6 @@ int main (int argc, char *argv[]) {
 #pragma omp parallel default(none) shared(nclusters, fd, cent, cluster_data, a) private(i, j, ind)
     {
 
-
         for (i = 0; i < nclusters; i++) {
             for (j = 0; j < NCAR; j++) fprintf(fd, "%7.3f", cent[i][j]);
             fprintf(fd, "\n");
