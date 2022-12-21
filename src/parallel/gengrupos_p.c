@@ -63,67 +63,80 @@ int main (int argc, char *argv[]) {
     fscanf(fd, "%d", &nelem);
     if (argc == 4) nelem = atoi(argv[3]);    // 4. parametro: numero de elementos
 
+
     for (i = 0; i < nelem; i++)
         for (j = 0; j < NCAR; j++)
             fscanf(fd, "%f", &(elem[i][j]));
 
+    fclose(fd);
+    // lectura de datos (enfermedades): enf[i][j]
+    // ==========================================
+
+    fd = fopen(argv[2], "r");
+    if (fd == NULL) {
+        printf("[!] Error al abrir el fichero %s\n", argv[2]);
+        exit(-1);
+    }
+
+
+    for (i = 0; i < nelem; i++) {
+        for (j = 0; j < TENF; j++)
+            fscanf(fd, "%f", &(enf[i][j]));
+    }
 
     fclose(fd);
-	// lectura de datos (enfermedades): enf[i][j]
-	// ==========================================
+    clock_gettime(CLOCK_REALTIME, &t12);
+    t_lec = (t12.tv_sec - t11.tv_sec) + (t12.tv_nsec - t11.tv_nsec) / (double) 1e9;
 
-	fd = fopen (argv[2], "r");
-	if (fd == NULL) {
-		printf ("[!] Error al abrir el fichero %s\n", argv[2]);
-		exit (-1);
-	}
+    convergencia_cont = 0;
+    sil_old = -1;
 
-	for (i=0; i<nelem; i++) {
-		for (j=0; j<TENF; j++)
-			fscanf (fd, "%f", &(enf[i][j]));
-	}
-	fclose (fd);
-	clock_gettime (CLOCK_REALTIME, &t12);
-	t_lec = (t12.tv_sec-t11.tv_sec) + (t12.tv_nsec-t11.tv_nsec)/(double)1e9;
+    omp_set_num_threads(16);
 
-	convergencia_cont = 0;
-	sil_old = -1;
-	while(nclusters < MAX_GRUPOS && convergencia_cont < 1){
-		// generacion de los primeros centroides de forma aleatoria
-		// ========================================================
-		inicializar_centroides(cent);
+    while (nclusters < MAX_GRUPOS && convergencia_cont < 1) {
+        // generacion de los primeros centroides de forma aleatoria
+        // ========================================================
+        inicializar_centroides(cent);
 
-		// A: agrupar los elementos en nclusters clusteres
-		// ===============================================
-		num_ite = 0;
-		fin = 0;
-        omp_set_num_threads(8);
+        // A: agrupar los elementos en nclusters clusteres
+        // ===============================================
+        num_ite = 0;
+        fin = 0;
+
 
         while ((fin == 0) && (num_ite < MAXIT)) {
-
-                // OMP: Región paralela en nearest_cluster
-                // calcular el grupo mas cercano
+            // OMP: Región paralela en nearest_cluster
+            // calcular el grupo mas cercano
+#pragma omp parallel default(none) shared(num_ite, fin, nelem, elem, cent, popul)
+            {
                 nearest_cluster(nelem, elem, cent, popul);
 
                 // calcular los nuevos centroides de los grupos
+            }
                 fin = nuevos_centroides(elem, cent, popul, nelem);
 
                 num_ite++;
 
         }
 
-		// B. Calcular la "calidad" del agrupamiento
-		// ==========================================
+        // B. Calcular la "calidad" del agrupamiento
+        // ==========================================
 
-		// lista de clusters: numero de elementos y su clasificacion
-
+        // lista de clusters: numero de elementos y su clasificacion
+#pragma omp parallel default(none) private(i, grupo, num), shared(sil, elem, cent, a, cluster_data, popul, nclusters, nelem)
+        {
+#pragma omp for
             for (i = 0; i < nclusters; i++) cluster_data[i].nelems = 0;
+        }
+#pragma omp for private(grupo, i, num)
             for (i = 0; i < nelem; i++) {
                 grupo = popul[i];
-                num = cluster_data[grupo].nelems;
 
-                cluster_data[grupo].elem_index[num] = i;  // elementos de cada grupo (cluster)
-                cluster_data[grupo].nelems++;
+#pragma omp critical
+                {
+                    cluster_data[grupo].elem_index[cluster_data[grupo].nelems] = i;
+                    cluster_data[grupo].nelems++;
+                }
             }
 
             // silhouette simple: calidad de la particion
@@ -131,26 +144,28 @@ int main (int argc, char *argv[]) {
 
             // calcular la diferencia: estabilidad
             diff = sil - sil_old;
+
             if (diff < DELTA2) convergencia_cont++;
             else convergencia_cont = 0;
             sil_old = sil;
             nclusters = nclusters + 10;
 
-
 	}
-    nclusters = nclusters - 10;
-	clock_gettime (CLOCK_REALTIME, &t17);
-	t_clust = (t17.tv_sec-t12.tv_sec) + (t17.tv_nsec-t12.tv_nsec)/(double)1e9;
+        nclusters = nclusters - 10;
+        clock_gettime (CLOCK_REALTIME, &t17);
+        t_clust = (t17.tv_sec-t12.tv_sec) + (t17.tv_nsec-t12.tv_nsec)/(double)1e9;
 
-	// 2. fase: numero de elementos de cada grupo; analisis enfermedades
-	// ===========================================================================
-#pragma omp parallel default(none) private(t20, t21, t_enf, i, j, ind) shared(cent, cluster_data, enf, prob_enf, fd, nclusters)
-    {
+        // 2. fase: numero de elementos de cada grupo; analisis enfermedades
+        // ===========================================================================
+        clock_gettime(CLOCK_REALTIME, &t20);
 
 
         // analisis de enfermedades
-        clock_gettime(CLOCK_REALTIME, &t20);
-        analisis_enfermedades(cluster_data, enf, prob_enf);
+//#pragma omp parallel default(none) shared(cluster_data, enf, prob_enf)
+        {
+            analisis_enfermedades(cluster_data, enf, prob_enf);
+        }
+
         clock_gettime(CLOCK_REALTIME, &t21);
         t_enf = (t21.tv_sec - t20.tv_sec) + (t21.tv_nsec - t20.tv_nsec) / (double) 1e9;
 
@@ -164,6 +179,10 @@ int main (int argc, char *argv[]) {
         }
 
         fprintf(fd, ">> Centroides de los clusters\n\n");
+#pragma omp parallel default(none) shared(nclusters, fd, cent, cluster_data, a) private(i, j, ind)
+    {
+
+
         for (i = 0; i < nclusters; i++) {
             for (j = 0; j < NCAR; j++) fprintf(fd, "%7.3f", cent[i][j]);
             fprintf(fd, "\n");
@@ -171,6 +190,7 @@ int main (int argc, char *argv[]) {
 
         fprintf(fd, "\n\n>> Numero de clusteres: %d. Numero de elementos en cada cluster:\n\n", nclusters);
         ind = 0;
+#pragma omp for
         for (i = 0; i < nclusters / 10; i++) {
             for (j = 0; j < 10; j++) {
                 fprintf(fd, "%6d", cluster_data[ind].nelems);
@@ -180,16 +200,18 @@ int main (int argc, char *argv[]) {
         }
         for (i = ind; i < nclusters; i++) fprintf(fd, "%6d", cluster_data[i].nelems);
         fprintf(fd, "\n");
+
+        fprintf(fd, "\n>> Densidad de los clusters: b[i]\n\n");
+        ind = 0;
+#pragma omp for
+        for (i = 0; i < nclusters / 10; i++) {
+            for (j = 0; j < 10; j++) {
+                fprintf(fd, "%9.2f", a[ind]);
+                ind++;
+            }
+            fprintf(fd, "\n");
+        }
     }
-	fprintf (fd, "\n>> Densidad de los clusters: b[i]\n\n");
-	ind = 0;
-	for (i=0; i < nclusters / 10; i++) {
-		for (j=0; j<10; j++){
-			fprintf (fd, "%9.2f", a[ind]);
-			ind++;
-		}
-		fprintf (fd, "\n");
-	}
 	for(i=ind; i < nclusters; i++) fprintf(fd, "%9.2f", a[i]);
 	fprintf(fd, "\n");
 
