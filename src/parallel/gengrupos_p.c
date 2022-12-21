@@ -91,7 +91,7 @@ int main (int argc, char *argv[]) {
     convergencia_cont = 0;
     sil_old = -1;
 
-    omp_set_num_threads(16);
+    omp_set_num_threads(6);
 
     while (nclusters < MAX_GRUPOS && convergencia_cont < 1) {
         // generacion de los primeros centroides de forma aleatoria
@@ -110,13 +110,10 @@ int main (int argc, char *argv[]) {
 #pragma omp parallel default(none) shared(num_ite, fin, nelem, elem, cent, popul)
             {
                 nearest_cluster(nelem, elem, cent, popul);
-
-                // calcular los nuevos centroides de los grupos
             }
-                fin = nuevos_centroides(elem, cent, popul, nelem);
-
-                num_ite++;
-
+            // calcular los nuevos centroides de los grupos
+            fin = nuevos_centroides(elem, cent, popul, nelem);
+            num_ite++;
         }
 
         // B. Calcular la "calidad" del agrupamiento

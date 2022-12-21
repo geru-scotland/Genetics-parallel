@@ -88,7 +88,7 @@ double silhouette_simple(float samples[][NCAR], struct lista_grupos *cluster_dat
     float b[nclusters];
     double tmp = 0;
     float narista = 0;
-#pragma omp parallel default(none) shared(nclusters, b, a, cluster_data, samples, narista) reduction(+: tmp)
+#pragma omp parallel default(none) shared(nclusters, b, a, cluster_data, samples, narista, centroids) reduction(+: tmp)
     {
 #pragma omp for
         for (int k = 0; k < nclusters; k++) b[k] = 0.0f;
@@ -117,18 +117,17 @@ double silhouette_simple(float samples[][NCAR], struct lista_grupos *cluster_dat
                 a[k] = cluster_data[k].nelems <= 1 ? 0 : (float) (tmp / narista);
             }
         }
-    }
-    // aproximar b[i] de cada cluster
-#pragma omp for nowait
-    for(int k = 0; k < nclusters; k++){
-        for(int j = 0; j < nclusters; j++){
-            b[k] += (float) geneticdist(centroids[k], centroids[j]); // Cuando k = j -> geneticdist = 0.
-        }
-        b[k] /=  (float)(nclusters - 1);
-    }
 
+        // aproximar b[i] de cada cluster
+#pragma omp for nowait
+        for (int k = 0; k < nclusters; k++) {
+            for (int j = 0; j < nclusters; j++) {
+                b[k] += (float) geneticdist(centroids[k], centroids[j]); // Cuando k = j -> geneticdist = 0.
+            }
+            b[k] /= (float) (nclusters - 1);
+        }
+    }
     float max, sil = 0.0f;
-#pragma omp for
     for(int k = 0; k < nclusters; k++){
         max = a[k] >= b[k] ? a[k] : b[k];
         if(max != 0.0f)
