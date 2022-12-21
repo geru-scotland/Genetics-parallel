@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.12.1)
+set(CMAKE_C_COMPILER /opt/gnu/gcc/bin/gcc)
 project(genetics C)
 
 set(CMAKE_C_STANDARD 17)

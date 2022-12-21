@@ -158,7 +158,7 @@ void analisis_enfermedades(struct lista_grupos *cluster_data, float enf[][TENF],
             analysis[i].mmax = 0.0f;
         }
 
-#pragma omp for  private(cluster_size, disease_data, median)
+#pragma omp for nowait private(cluster_size, disease_data, median)
         for(int k = 0; k < nclusters; k++){
             cluster_size = cluster_data[k].nelems;
 
@@ -217,22 +217,28 @@ int nuevos_centroides(float elem[][NCAR], float cent[][NCAR], int samples[], int
     double additions[nclusters][NCAR + 1];
     float newcent[nclusters][NCAR];
 
-
-    for (i = 0; i < nclusters; i++)
-        for (j = 0; j < NCAR + 1; j++)
-            additions[i][j] = 0.0;
-
-    // acumular los valores de cada caracteristica (100); numero de elementos al final
-    // #pragma omp atomic update NO, empeora muchísimo.
-    // #pragma omp parallel for default(none) shared(nelem, samples, elem) private(i, j) reduction(+:additions)
-    for (i = 0; i < nelem; i++) {
-        for (j = 0; j < NCAR; j++)
-            additions[samples[i]][j] += elem[i][j];
-        additions[samples[i]][NCAR]++;
+#pragma omp parallel default(none) shared(nclusters, nelem, samples, elem, additions) private(i, j)
+    {
+#pragma omp for
+        for (i = 0; i < nclusters; i++)
+            for (j = 0; j < NCAR + 1; j++)
+                additions[i][j] = 0.0;
     }
+        // acumular los valores de cada caracteristica (100); numero de elementos al final
+        // #pragma omp atomic update NO, empeora muchísimo.
+        // #pragma omp parallel for default(none) shared(nelem, samples, elem) private(i, j) reduction(+:additions)
+        // set en CMake para que la versión de gcc incluya una versión superior a 4.5 de OpenMP, para intentar
+        // poder utilizar reduction en arrays
+#pragma omp for //reduction(+: additions[:nclusters][:NCAR])
+        for (i = 0; i < nelem; i++) {
+            for (j = 0; j < NCAR; j++)
+                additions[samples[i]][j] += elem[i][j];
+            additions[samples[i]][NCAR]++;
+        }
 
     // calcular los nuevos centroides y decidir si el proceso ha finalizado o no (en funcion de DELTA)
     fin = 1;
+#pragma omp for nowait
     for (i = 0; i < nclusters; i++) {
         if (additions[i][NCAR] > 0) { // ese grupo (cluster) no esta vacio
             // media de cada caracteristica

@@ -161,10 +161,7 @@ int main (int argc, char *argv[]) {
 
 
         // analisis de enfermedades
-//#pragma omp parallel default(none) shared(cluster_data, enf, prob_enf)
-        {
-            analisis_enfermedades(cluster_data, enf, prob_enf);
-        }
+        analisis_enfermedades(cluster_data, enf, prob_enf);
 
         clock_gettime(CLOCK_REALTIME, &t21);
         t_enf = (t21.tv_sec - t20.tv_sec) + (t21.tv_nsec - t20.tv_nsec) / (double) 1e9;
