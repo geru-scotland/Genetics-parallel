@@ -65,3 +65,4 @@ dkms.conf
 #Cmake
 cmake-build-debug
 build-release
+cmake-build-release
