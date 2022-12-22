@@ -91,7 +91,7 @@ int main (int argc, char *argv[]) {
     convergencia_cont = 0;
     sil_old = -1;
 
-    omp_set_num_threads(6);
+    omp_set_num_threads(64);
 
     while (nclusters < MAX_GRUPOS && convergencia_cont < 1) {
         // generacion de los primeros centroides de forma aleatoria

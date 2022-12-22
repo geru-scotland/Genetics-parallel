@@ -241,19 +241,20 @@ int nuevos_centroides(float elem[][NCAR], float cent[][NCAR], int samples[], int
         for (i = 0; i < nclusters; i++)
             for (j = 0; j < NCAR + 1; j++)
                 additions[i][j] = 0.0;
-    }
+
         // acumular los valores de cada caracteristica (100); numero de elementos al final
         // #pragma omp atomic update NO, empeora muchísimo.
         // #pragma omp parallel for default(none) shared(nelem, samples, elem) private(i, j) reduction(+:additions)
         // set en CMake para que la versión de gcc incluya una versión superior a 4.5 de OpenMP, para intentar
         // poder utilizar reduction en arrays
-#pragma omp for //reduction(+: additions[:nclusters][:NCAR])
+//#pragma omp parallel for default(none) shared( nelem, samples, elem, nclusters) private(i, j) reduction(+: additions[:nclusters][:NCAR+1])
+#pragma omp for reduction(+: additions[:nclusters][:NCAR+1])
         for (i = 0; i < nelem; i++) {
             for (j = 0; j < NCAR; j++)
                 additions[samples[i]][j] += elem[i][j];
             additions[samples[i]][NCAR]++;
         }
-
+    }
     // calcular los nuevos centroides y decidir si el proceso ha finalizado o no (en funcion de DELTA)
     fin = 1;
 #pragma omp for nowait
