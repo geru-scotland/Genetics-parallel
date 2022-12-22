@@ -11,22 +11,41 @@
 #include <omp.h>
 
 
-// Ahora utilizamos algoritmo de burbuja para el ordenado, pero lo reemplazaremos por
-// Quicksort en breves.
-float sort_and_median(int n, float* disease_data)
-{
-    float tmp;
+void swap(float *a, float *b) {
+    float t = *a;
+    *a = *b;
+    *b = t;
+}
 
-    for(int i = 0; i < n - 1; i++) {
-        for (int j = 0; j < n - i - 1; j++) {
-            if (disease_data[j] > disease_data[j + 1]) {
-                tmp = disease_data[j + 1];
-                disease_data[j + 1] = disease_data[j];
-                disease_data[j] = tmp;
-            }
+int partition(float array[], int low, int high) {
+
+    float pivot = array[high];
+
+    int i = (low - 1);
+
+    for (int j = low; j < high; j++) {
+        if (array[j] <= pivot) {
+            i++;
+            swap(&array[i], &array[j]);
         }
     }
 
+    swap(&array[i + 1], &array[high]);
+    return (i + 1);
+}
+
+// Quicksort, gracias a https://www.programiz.com/dsa/quick-sort
+void quickSort(float array[], int low, int high) {
+    if (low < high) {
+        int pi = partition(array, low, high);
+        quickSort(array, low, pi - 1);
+        quickSort(array, pi + 1, high);
+    }
+}
+
+float sort_and_median(int n, float* disease_data)
+{
+    quickSort(disease_data, 0, n - 1);
     return disease_data[n/2];
 }
 
