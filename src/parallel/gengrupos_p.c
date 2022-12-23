@@ -107,10 +107,8 @@ int main (int argc, char *argv[]) {
         while ((fin == 0) && (num_ite < MAXIT)) {
             // OMP: Región paralela en nearest_cluster
             // calcular el grupo mas cercano
-#pragma omp parallel default(none) shared(num_ite, fin, nelem, elem, cent, popul)
-            {
-                nearest_cluster(nelem, elem, cent, popul);
-            }
+
+            nearest_cluster(nelem, elem, cent, popul);
             // calcular los nuevos centroides de los grupos
             fin = nuevos_centroides(elem, cent, popul, nelem);
             num_ite++;
@@ -124,21 +122,19 @@ int main (int argc, char *argv[]) {
         {
 #pragma omp for
             for (i = 0; i < nclusters; i++) cluster_data[i].nelems = 0;
-        }
+
 #pragma omp for private(grupo, i, num)
             for (i = 0; i < nelem; i++) {
                 grupo = popul[i];
-
 #pragma omp critical
                 {
                     cluster_data[grupo].elem_index[cluster_data[grupo].nelems] = i;
                     cluster_data[grupo].nelems++;
                 }
             }
-
+        }
             // silhouette simple: calidad de la particion
             sil = silhouette_simple(elem, cluster_data, cent, a);
-
             // calcular la diferencia: estabilidad
             diff = sil - sil_old;
 
@@ -175,7 +171,7 @@ int main (int argc, char *argv[]) {
         fprintf(fd, ">> Centroides de los clusters\n\n");
 #pragma omp parallel default(none) shared(nclusters, fd, cent, cluster_data, a) private(i, j, ind)
     {
-
+#pragma omp for
         for (i = 0; i < nclusters; i++) {
             for (j = 0; j < NCAR; j++) fprintf(fd, "%7.3f", cent[i][j]);
             fprintf(fd, "\n");
@@ -209,7 +205,8 @@ int main (int argc, char *argv[]) {
 	fprintf(fd, "\n");
 
 	fprintf (fd,"\n\n>> Analisis de enfermedades (medianas) en los grupos\n\n");
-	for (i=0; i<TENF; i++)
+#pragma omp parallel for default(none) shared(prob_enf, fd) private(i)
+    for (i=0; i<TENF; i++)
 		fprintf (fd,"Enfermedad: %2d - mmax: %4.2f (grupo %2d) - mmin: %4.2f (grupo %2d)\n",
 				i, prob_enf[i].mmax, prob_enf[i].gmax, prob_enf[i].mmin, prob_enf[i].gmin);
 
@@ -220,7 +217,8 @@ int main (int argc, char *argv[]) {
 	// =======================================
 
 	printf ("\n>> Centroides 0, 20, 40...\n");
-	for (i=0; i < nclusters; i+=20) {
+#pragma omp parallel for default(none) shared(nclusters, cent) private(i, j)
+    for (i=0; i < nclusters; i+=20) {
 		printf ("\n  cent%2d -- ", i);
 		for (j=0; j<NCAR; j++) printf ("%5.1f", cent[i][j]);
 		printf("\n");
@@ -228,7 +226,8 @@ int main (int argc, char *argv[]) {
 
 	printf ("\n>> Numero de clusteres: %d. Tamanno de los grupos:\n\n", nclusters);
 	ind = 0;
-	for (i=0; i < nclusters / 10; i++) {
+#pragma omp parallel for default(none) shared(nclusters, cluster_data) private(i, j, ind)
+    for (i=0; i < nclusters / 10; i++) {
 		for (j=0; j<10; j++){
 			printf ("%6d", cluster_data[ind].nelems);
 			ind++;
@@ -240,6 +239,7 @@ int main (int argc, char *argv[]) {
 
 	printf("\n>> Densidad de los clusters: b[i]\n\n");
 	ind = 0;
+
 	for (i=0; i < nclusters / 10; i++) {
 		for (j=0; j<10; j++){
 			printf("%9.2f", a[ind]);
