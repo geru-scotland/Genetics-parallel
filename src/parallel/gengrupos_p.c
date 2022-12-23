@@ -205,8 +205,7 @@ int main (int argc, char *argv[]) {
 	fprintf(fd, "\n");
 
 	fprintf (fd,"\n\n>> Analisis de enfermedades (medianas) en los grupos\n\n");
-#pragma omp parallel for default(none) shared(prob_enf, fd) private(i)
-    for (i=0; i<TENF; i++)
+	for (i=0; i<TENF; i++)
 		fprintf (fd,"Enfermedad: %2d - mmax: %4.2f (grupo %2d) - mmin: %4.2f (grupo %2d)\n",
 				i, prob_enf[i].mmax, prob_enf[i].gmax, prob_enf[i].mmin, prob_enf[i].gmin);
 
@@ -217,8 +216,7 @@ int main (int argc, char *argv[]) {
 	// =======================================
 
 	printf ("\n>> Centroides 0, 20, 40...\n");
-#pragma omp parallel for default(none) shared(nclusters, cent) private(i, j)
-    for (i=0; i < nclusters; i+=20) {
+	for (i=0; i < nclusters; i+=20) {
 		printf ("\n  cent%2d -- ", i);
 		for (j=0; j<NCAR; j++) printf ("%5.1f", cent[i][j]);
 		printf("\n");
@@ -226,8 +224,7 @@ int main (int argc, char *argv[]) {
 
 	printf ("\n>> Numero de clusteres: %d. Tamanno de los grupos:\n\n", nclusters);
 	ind = 0;
-#pragma omp parallel for default(none) shared(nclusters, cluster_data) private(i, j, ind)
-    for (i=0; i < nclusters / 10; i++) {
+	for (i=0; i < nclusters / 10; i++) {
 		for (j=0; j<10; j++){
 			printf ("%6d", cluster_data[ind].nelems);
 			ind++;
@@ -239,7 +236,6 @@ int main (int argc, char *argv[]) {
 
 	printf("\n>> Densidad de los clusters: b[i]\n\n");
 	ind = 0;
-
 	for (i=0; i < nclusters / 10; i++) {
 		for (j=0; j<10; j++){
 			printf("%9.2f", a[ind]);

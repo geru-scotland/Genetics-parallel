@@ -125,7 +125,8 @@ double silhouette_simple(float samples[][NCAR], struct lista_grupos *cluster_dat
         // Me baso en teoría de grafos para obtener el peso total de las distancias
         // Según se va avanzando, únicamente tengo en cuenta las distancias
         // con elementos posicionados en posiciones mayores que la actual.
-#pragma omp for reduction(+: tmp)
+        // tmp thread safe ORDERED PARA A[K]
+#pragma omp for reduction(+: tmp) ordered
         for (int k = 0; k < nclusters; k++) {
             tmp = 0;
             for (int i = 0; i < cluster_data[k].nelems; i++) {
@@ -139,7 +140,7 @@ double silhouette_simple(float samples[][NCAR], struct lista_grupos *cluster_dat
             // para que estos calculos no sean accedidos concurrentemente.
             // medidas para los n elementos de cada clúster. n(n-1)/2.
             // Equivale al Cálculo de aristas totales para un grafo completo.
-#pragma omp critical
+//#pragma omp critical
             {
                 narista = ((float) (cluster_data[k].nelems * (cluster_data[k].nelems - 1)) / 2);
                 a[k] = cluster_data[k].nelems <= 1 ? 0 : (float) (tmp / narista);
