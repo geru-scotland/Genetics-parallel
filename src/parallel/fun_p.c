@@ -140,7 +140,7 @@ double silhouette_simple(float samples[][NCAR], struct lista_grupos *cluster_dat
             // para que estos calculos no sean accedidos concurrentemente.
             // medidas para los n elementos de cada clúster. n(n-1)/2.
             // Equivale al Cálculo de aristas totales para un grafo completo.
-//#pragma omp critical
+//#pragma omp critical // Fuera, dependen de K
             {
                 narista = ((float) (cluster_data[k].nelems * (cluster_data[k].nelems - 1)) / 2);
                 a[k] = cluster_data[k].nelems <= 1 ? 0 : (float) (tmp / narista);
@@ -177,7 +177,7 @@ double silhouette_simple(float samples[][NCAR], struct lista_grupos *cluster_dat
 *****************************************************************************************/
 void analisis_enfermedades(struct lista_grupos *cluster_data, float enf[][TENF], struct analisis *analysis)
 {
-    int cluster_size;
+    int cluster_size, j;
     float median;
     float *disease_data;
 
@@ -189,7 +189,7 @@ void analisis_enfermedades(struct lista_grupos *cluster_data, float enf[][TENF],
             analysis[i].mmax = 0.0f;
         }
 
-#pragma omp for nowait private(cluster_size, disease_data, median)
+#pragma omp for nowait private(cluster_size, disease_data, median, j)
         for(int k = 0; k < nclusters; k++){
             cluster_size = cluster_data[k].nelems;
 
@@ -207,8 +207,8 @@ void analisis_enfermedades(struct lista_grupos *cluster_data, float enf[][TENF],
 
                 //Ya tengo la median para ésta enfermedad y éste clúster.
                 median = sort_and_median(cluster_size, disease_data);
-#pragma omp critical
-                {
+
+
                 if ((median > 0 && median < analysis[j].mmin) || ((median == analysis[j].mmin) && (k < analysis[j].gmin))){
                     analysis[j].mmin = median;
                     analysis[j].gmin = k;
@@ -218,7 +218,7 @@ void analisis_enfermedades(struct lista_grupos *cluster_data, float enf[][TENF],
                         analysis[j].mmax = median;
                         analysis[j].gmax = k;
                     }
-                }
+
 
                 free(disease_data); // Para cada enfermedad
             }
