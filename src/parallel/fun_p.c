@@ -126,7 +126,7 @@ double silhouette_simple(float samples[][NCAR], struct lista_grupos *cluster_dat
         // Según se va avanzando, únicamente tengo en cuenta las distancias
         // con elementos posicionados en posiciones mayores que la actual.
         // tmp thread safe ORDERED PARA A[K]
-#pragma omp for reduction(+: tmp) ordered
+#pragma omp for reduction(+: tmp)
         for (int k = 0; k < nclusters; k++) {
             tmp = 0;
             for (int i = 0; i < cluster_data[k].nelems; i++) {
@@ -183,7 +183,7 @@ void analisis_enfermedades(struct lista_grupos *cluster_data, float enf[][TENF],
 
 #pragma omp parallel default(none) shared (analysis, nclusters, cluster_data, enf)
     {
-#pragma omp for
+#pragma omp for nowait
         for(int i = 0; i < TENF; i++){
             analysis[i].mmin = FLT_MAX;
             analysis[i].mmax = 0.0f;
@@ -248,7 +248,7 @@ int nuevos_centroides(float elem[][NCAR], float cent[][NCAR], int samples[], int
     double additions[nclusters][NCAR + 1];
     float newcent[nclusters][NCAR];
 
-#pragma omp parallel default(none) shared(nclusters, nelem, samples, elem, additions) private(i, j)
+#pragma omp parallel default(none) shared(nclusters, nelem, samples, elem, additions, fin, newcent, cent) private(i, j, discent)
     {
 #pragma omp for
         for (i = 0; i < nclusters; i++)
@@ -261,18 +261,18 @@ int nuevos_centroides(float elem[][NCAR], float cent[][NCAR], int samples[], int
         // set en CMake para que la versión de gcc incluya una versión superior a 4.5 de OpenMP, para intentar
         // poder utilizar reduction en arrays
 //#pragma omp parallel for default(none) shared( nelem, samples, elem, nclusters) private(i, j) reduction(+: additions[:nclusters][:NCAR+1])
-#pragma omp for reduction(+: additions[:nclusters][:NCAR+1])
+#pragma omp for nowait reduction(+: additions[:nclusters][:NCAR+1])
         for (i = 0; i < nelem; i++) {
             for (j = 0; j < NCAR; j++)
                 additions[samples[i]][j] += elem[i][j];
             additions[samples[i]][NCAR]++;
         }
-    }
+
     // calcular los nuevos centroides y decidir si el proceso ha finalizado o no (en funcion de DELTA)
+    //
+#pragma omp single
     fin = 1;
 
-#pragma omp parallel default(none) shared(nclusters, cent, additions, newcent, fin) private(i, j, discent)
-    {
 #pragma omp for nowait
         for (i = 0; i < nclusters; i++) {
             if (additions[i][NCAR] > 0) { // ese grupo (cluster) no esta vacio
