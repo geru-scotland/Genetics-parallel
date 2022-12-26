@@ -177,10 +177,9 @@ double silhouette_simple(float samples[][NCAR], struct lista_grupos *cluster_dat
 *****************************************************************************************/
 void analisis_enfermedades(struct lista_grupos *cluster_data, float enf[][TENF], struct analisis *analysis)
 {
-    int cluster_size, j;
+    int cluster_size;
     float median;
     float *disease_data;
-    int j;
 
 #pragma omp parallel default(none) shared (analysis, nclusters, cluster_data, enf)
     {
@@ -190,7 +189,7 @@ void analisis_enfermedades(struct lista_grupos *cluster_data, float enf[][TENF],
             analysis[i].mmax = 0.0f;
         }
 
-#pragma omp for nowait private(cluster_size, disease_data, median, j)
+#pragma omp for nowait private(cluster_size, disease_data, median)
         for(int k = 0; k < nclusters; k++){
             cluster_size = cluster_data[k].nelems;
 
