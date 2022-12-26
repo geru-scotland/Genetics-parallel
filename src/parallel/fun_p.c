@@ -112,13 +112,13 @@ void nearest_cluster(int nelem, float elem[][NCAR], float cent[][NCAR], int *sam
 double silhouette_simple(float samples[][NCAR], struct lista_grupos *cluster_data, float centroids[][NCAR], float a[]) {
 
     float b[nclusters];
-    double tmp = 0;
     float narista = 0;
+    double tmp = 0;
 #pragma omp parallel default(none) shared(nclusters, b, a, cluster_data, samples, centroids, tmp) firstprivate(narista)
     {
-#pragma omp for nowait
+#pragma omp for
         for (int k = 0; k < nclusters; k++) b[k] = 0.0f;
-#pragma omp for nowait
+#pragma omp for
         for (int k = 0; k < MAX_GRUPOS; k++) a[k] = 0.0f;
 
 
@@ -126,7 +126,7 @@ double silhouette_simple(float samples[][NCAR], struct lista_grupos *cluster_dat
         // Según se va avanzando, únicamente tengo en cuenta las distancias
         // con elementos posicionados en posiciones mayores que la actual.
         // tmp thread safe ORDERED PARA A[K]
-#pragma omp for reduction(+: tmp)
+#pragma omp for nowait reduction(+: tmp)
         for (int k = 0; k < nclusters; k++) {
             tmp = 0;
             for (int i = 0; i < cluster_data[k].nelems; i++) {
@@ -140,9 +140,8 @@ double silhouette_simple(float samples[][NCAR], struct lista_grupos *cluster_dat
             // para que estos calculos no sean accedidos concurrentemente.
             // medidas para los n elementos de cada clúster. n(n-1)/2.
             // Equivale al Cálculo de aristas totales para un grafo completo.
-            //#pragma omp critical // Fuera, dependen de K
-                narista = ((float) (cluster_data[k].nelems * (cluster_data[k].nelems - 1)) / 2);
-                a[k] = cluster_data[k].nelems <= 1 ? 0 : (float) (tmp / narista);
+            narista = ((float) (cluster_data[k].nelems * (cluster_data[k].nelems - 1)) / 2);
+            a[k] = cluster_data[k].nelems <= 1 ? 0 : (float) (tmp / narista);
         }
 
         // b[k] no depende de nada del bucle anterior, asi que quiero que arranque
@@ -258,7 +257,6 @@ int nuevos_centroides(float elem[][NCAR], float cent[][NCAR], int samples[], int
         // #pragma omp parallel for default(none) shared(nelem, samples, elem) private(i, j) reduction(+:additions)
         // set en CMake para que la versión de gcc incluya una versión superior a 4.5 de OpenMP, para intentar
         // poder utilizar reduction en arrays
-//#pragma omp parallel for default(none) shared( nelem, samples, elem, nclusters) private(i, j) reduction(+: additions[:nclusters][:NCAR+1])
 #pragma omp for nowait reduction(+: additions[:nclusters][:NCAR+1])
         for (i = 0; i < nelem; i++) {
             for (j = 0; j < NCAR; j++)
@@ -266,12 +264,12 @@ int nuevos_centroides(float elem[][NCAR], float cent[][NCAR], int samples[], int
             additions[samples[i]][NCAR]++;
         }
 
-    // calcular los nuevos centroides y decidir si el proceso ha finalizado o no (en funcion de DELTA)
-    //
+        // calcular los nuevos centroides y decidir si el proceso ha finalizado o no (en funcion de DELTA)
+        // Que esperen todos los hilos
 #pragma omp single
-    fin = 1;
+        fin = 1;
 
-#pragma omp for nowait
+#pragma omp for
         for (i = 0; i < nclusters; i++) {
             if (additions[i][NCAR] > 0) { // ese grupo (cluster) no esta vacio
                 // media de cada caracteristica

@@ -117,7 +117,7 @@ double silhouette_simple(float samples[][NCAR], struct lista_grupos *cluster_dat
         }
 
         // medidas para los n elementos de cada clúster. n(n-1)/2.
-        // Equivale al Cálculo de aristas totales para un grafo completo.
+        // Equivale al Cálculo de aristas totales para un grafo completo.z
         float narista = ((float)(cluster_data[k].nelems * (cluster_data[k].nelems - 1)) / 2);
         a[k] = cluster_data[k].nelems <= 1 ? 0 : (float)(tmp / narista);
     }
