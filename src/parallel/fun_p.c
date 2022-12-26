@@ -114,7 +114,7 @@ double silhouette_simple(float samples[][NCAR], struct lista_grupos *cluster_dat
     float b[nclusters];
     double tmp = 0;
     float narista = 0;
-#pragma omp parallel default(none) shared(nclusters, b, a, cluster_data, samples, narista, centroids, tmp)
+#pragma omp parallel default(none) shared(nclusters, b, a, cluster_data, samples, centroids, tmp) firstprivate(narista)
     {
 #pragma omp for nowait
         for (int k = 0; k < nclusters; k++) b[k] = 0.0f;
@@ -140,11 +140,9 @@ double silhouette_simple(float samples[][NCAR], struct lista_grupos *cluster_dat
             // para que estos calculos no sean accedidos concurrentemente.
             // medidas para los n elementos de cada clúster. n(n-1)/2.
             // Equivale al Cálculo de aristas totales para un grafo completo.
-//#pragma omp critical // Fuera, dependen de K
-            {
+            //#pragma omp critical // Fuera, dependen de K
                 narista = ((float) (cluster_data[k].nelems * (cluster_data[k].nelems - 1)) / 2);
                 a[k] = cluster_data[k].nelems <= 1 ? 0 : (float) (tmp / narista);
-            }
         }
 
         // b[k] no depende de nada del bucle anterior, asi que quiero que arranque
