@@ -180,6 +180,7 @@ void analisis_enfermedades(struct lista_grupos *cluster_data, float enf[][TENF],
     int cluster_size, j;
     float median;
     float *disease_data;
+    int j;
 
 #pragma omp parallel default(none) shared (analysis, nclusters, cluster_data, enf)
     {
