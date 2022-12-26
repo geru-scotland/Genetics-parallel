@@ -189,7 +189,7 @@ void analisis_enfermedades(struct lista_grupos *cluster_data, float enf[][TENF],
             analysis[i].mmax = 0.0f;
         }
 
-#pragma omp for nowait private(cluster_size, disease_data, median)
+#pragma omp for nowait private(cluster_size, disease_data, median) schedule(dynamic)
         for(int k = 0; k < nclusters; k++){
             cluster_size = cluster_data[k].nelems;
 

@@ -118,12 +118,12 @@ int main (int argc, char *argv[]) {
         // ==========================================
 
         // lista de clusters: numero de elementos y su clasificacion
-#pragma omp parallel default(none) private(i, grupo, num), shared(sil, elem, cent, a, cluster_data, popul, nclusters, nelem)
+#pragma omp parallel default(none) private(i, grupo), shared(cluster_data, popul, nclusters, nelem)
         {
 #pragma omp for
             for (i = 0; i < nclusters; i++) cluster_data[i].nelems = 0;
 
-#pragma omp for private(grupo, i, num)
+#pragma omp for private(grupo, i)
             for (i = 0; i < nelem; i++) {
                 grupo = popul[i];
 #pragma omp critical
@@ -169,7 +169,7 @@ int main (int argc, char *argv[]) {
         }
 
         fprintf(fd, ">> Centroides de los clusters\n\n");
-#pragma omp parallel default(none) shared(nclusters, fd, cent, cluster_data, a) private(i, j, ind)
+//#pragma omp parallel default(none) shared(nclusters, fd, cent, cluster_data, a) private(i, j, ind)
     {
 #pragma omp for
         for (i = 0; i < nclusters; i++) {
