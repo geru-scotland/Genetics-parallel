@@ -34,7 +34,6 @@ int partition(float array[], int low, int high) {
     return (i + 1);
 }
 
-// Quicksort, gracias a https://www.programiz.com/dsa/quick-sort
 // He optimizado la versión anterior para un mayor rendimiento.
 // Paso a iterativa
 void quickSort(float array[], int low, int high) {
@@ -157,7 +156,6 @@ double silhouette_simple(float samples[][NCAR], struct lista_grupos *cluster_dat
     }
 
     float max, sil = 0.0f;
-//#pragma omp parallel for default(none) shared(nclusters, a, b) firstprivate(max) reduction(+: sil)
     for (int k = 0; k < nclusters; k++) {
         max = a[k] >= b[k] ? a[k] : b[k];
         if (max != 0.0f)
