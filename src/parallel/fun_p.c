@@ -20,7 +20,6 @@ void swap(float *a, float *b) {
 int partition(float array[], int low, int high) {
 
     float pivot = array[high];
-
     int i = (low - 1);
 
     for (int j = low; j < high; j++) {
@@ -38,13 +37,11 @@ int partition(float array[], int low, int high) {
 // Paso a iterativa
 void quickSort(float array[], int low, int high) {
     while (low < high) {
-        // Find the pivot point
+
         int pivotIndex = partition(array, low, high);
 
-        // Sort the elements before the pivot point
         quickSort(array, low, pivotIndex - 1);
 
-        // Set the low index to the pivot point + 1
         low = pivotIndex + 1;
     }
 }
@@ -82,7 +79,6 @@ void nearest_cluster(int nelem, float elem[][NCAR], float cent[][NCAR], int *sam
 {
     double dist, mindist;
     {
-        // Se le invoca desde una región paralela
         // Schedule static por defecto, similar carga para cada iteracion.
 #pragma omp parallel for default(none) shared(nelem, elem, cent, samples, nclusters) private(dist, mindist)
         for(int i = 0; i < nelem; i++){
@@ -124,7 +120,6 @@ double silhouette_simple(float samples[][NCAR], struct lista_grupos *cluster_dat
         // Me baso en teoría de grafos para obtener el peso total de las distancias
         // Según se va avanzando, únicamente tengo en cuenta las distancias
         // con elementos posicionados en posiciones mayores que la actual.
-        // tmp thread safe ORDERED PARA A[K]
 #pragma omp for nowait reduction(+: tmp)
         for (int k = 0; k < nclusters; k++) {
             tmp = 0;
@@ -135,8 +130,6 @@ double silhouette_simple(float samples[][NCAR], struct lista_grupos *cluster_dat
                 }
             }
 
-            // omp single NO es compatible con la reduction clause, utilizo critical
-            // para que estos calculos no sean accedidos concurrentemente.
             // medidas para los n elementos de cada clúster. n(n-1)/2.
             // Equivale al Cálculo de aristas totales para un grafo completo.
             narista = ((float) (cluster_data[k].nelems * (cluster_data[k].nelems - 1)) / 2);
@@ -145,7 +138,6 @@ double silhouette_simple(float samples[][NCAR], struct lista_grupos *cluster_dat
 
         // b[k] no depende de nada del bucle anterior, asi que quiero que arranque
         // Inmediatamente - nowait.
-        // aproximar b[i] de cada cluster
 #pragma omp for nowait
         for (int k = 0; k < nclusters; k++) {
             for (int j = 0; j < nclusters; j++) {
@@ -215,7 +207,7 @@ void analisis_enfermedades(struct lista_grupos *cluster_data, float enf[][TENF],
                     }
 
 
-                free(disease_data); // Para cada enfermedad
+                free(disease_data);
             }
         }
     }
@@ -250,11 +242,6 @@ int nuevos_centroides(float elem[][NCAR], float cent[][NCAR], int samples[], int
             for (j = 0; j < NCAR + 1; j++)
                 additions[i][j] = 0.0;
 
-        // acumular los valores de cada caracteristica (100); numero de elementos al final
-        // #pragma omp atomic update NO, empeora muchísimo.
-        // #pragma omp parallel for default(none) shared(nelem, samples, elem) private(i, j) reduction(+:additions)
-        // set en CMake para que la versión de gcc incluya una versión superior a 4.5 de OpenMP, para intentar
-        // poder utilizar reduction en arrays
 #pragma omp for nowait reduction(+: additions[:nclusters][:NCAR+1])
         for (i = 0; i < nelem; i++) {
             for (j = 0; j < NCAR; j++)
@@ -262,14 +249,13 @@ int nuevos_centroides(float elem[][NCAR], float cent[][NCAR], int samples[], int
             additions[samples[i]][NCAR]++;
         }
 
-        // calcular los nuevos centroides y decidir si el proceso ha finalizado o no (en funcion de DELTA)
         // Que esperen todos los hilos
 #pragma omp single
         fin = 1;
 
 #pragma omp for
         for (i = 0; i < nclusters; i++) {
-            if (additions[i][NCAR] > 0) { // ese grupo (cluster) no esta vacio
+            if (additions[i][NCAR] > 0) {
                 // media de cada caracteristica
                 for (j = 0; j < NCAR; j++)
                     newcent[i][j] = (float) (additions[i][j] / additions[i][NCAR]);

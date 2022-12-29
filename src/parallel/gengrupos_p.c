@@ -169,9 +169,7 @@ int main (int argc, char *argv[]) {
         }
 
         fprintf(fd, ">> Centroides de los clusters\n\n");
-//#pragma omp parallel default(none) shared(nclusters, fd, cent, cluster_data, a) private(i, j, ind)
-    {
-#pragma omp for
+
         for (i = 0; i < nclusters; i++) {
             for (j = 0; j < NCAR; j++) fprintf(fd, "%7.3f", cent[i][j]);
             fprintf(fd, "\n");
@@ -179,7 +177,7 @@ int main (int argc, char *argv[]) {
 
         fprintf(fd, "\n\n>> Numero de clusteres: %d. Numero de elementos en cada cluster:\n\n", nclusters);
         ind = 0;
-#pragma omp for
+
         for (i = 0; i < nclusters / 10; i++) {
             for (j = 0; j < 10; j++) {
                 fprintf(fd, "%6d", cluster_data[ind].nelems);
@@ -192,7 +190,7 @@ int main (int argc, char *argv[]) {
 
         fprintf(fd, "\n>> Densidad de los clusters: b[i]\n\n");
         ind = 0;
-#pragma omp for
+
         for (i = 0; i < nclusters / 10; i++) {
             for (j = 0; j < 10; j++) {
                 fprintf(fd, "%9.2f", a[ind]);
@@ -200,7 +198,7 @@ int main (int argc, char *argv[]) {
             }
             fprintf(fd, "\n");
         }
-    }
+
 	for(i=ind; i < nclusters; i++) fprintf(fd, "%9.2f", a[i]);
 	fprintf(fd, "\n");
 

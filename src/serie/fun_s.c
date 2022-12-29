@@ -104,9 +104,12 @@ double silhouette_simple(float samples[][NCAR], struct lista_grupos *cluster_dat
 
     for(int k = 0; k < nclusters; k++) b[k] = 0.0f;
     for(int k = 0; k < MAX_GRUPOS; k++) a[k] = 0.0f;
-    // Me baso en teoría de grafos para obtener el peso total de las distancias
-    // Según se va avanzando, únicamente tengo en cuenta las distancias
-    // con elementos posicionados en posiciones mayores que la actual.
+
+    /*
+     * Me baso en teoría de grafos para obtener el peso total de las distancias
+     * Según se va avanzando, únicamente tengo en cuenta las distancias
+     * con elementos posicionados en posiciones mayores que la actual.
+     */
     for(int k = 0; k < nclusters; k++){
         tmp = 0;
         for(int i = 0; i < cluster_data[k].nelems; i++){
@@ -116,8 +119,10 @@ double silhouette_simple(float samples[][NCAR], struct lista_grupos *cluster_dat
             }
         }
 
-        // medidas para los n elementos de cada clúster. n(n-1)/2.
-        // Equivale al Cálculo de aristas totales para un grafo completo.z
+        /*
+         * Medidas para los n elementos de cada clúster. n(n-1)/2.
+         * Equivale al Cálculo de aristas totales para un grafo completo.
+         */
         float narista = ((float)(cluster_data[k].nelems * (cluster_data[k].nelems - 1)) / 2);
         a[k] = cluster_data[k].nelems <= 1 ? 0 : (float)(tmp / narista);
     }
@@ -164,13 +169,17 @@ void analisis_enfermedades(struct lista_grupos *cluster_data, float enf[][TENF],
             disease_data = malloc(sizeof(float) * cluster_size);
             for(int i = 0; i < cluster_size; i++) disease_data[i] = 0.0f;
 
-            // Para cada enfermedad, recorro todos las muestras del clúster
-            // recogiendo sus datos.
+            /*
+             * Para cada enfermedad, recorro todos las muestras del clúster
+             * recogiendo sus datos.
+             */
             for(int i = 0; i < cluster_size; i++)
                 disease_data[i] = enf[cluster_data[k].elem_index[i]][j];
 
-            // Tengo el array para ésta enfermedad en éste clúster.
-            // Solo me queda ordenar y calcular la mediana.
+            /**
+             * Tengo el array para ésta enfermedad en éste clúster.
+             * Solo me queda ordenar y calcular la mediana.
+             */
             median = sort_and_median(cluster_size, disease_data);
 
             //Ya tengo la median para ésta enfermedad y éste clúster.
