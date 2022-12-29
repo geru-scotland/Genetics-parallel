@@ -204,8 +204,7 @@ void analisis_enfermedades(struct lista_grupos *cluster_data, float enf[][TENF],
                 if ((median > analysis[j].mmax) || ((median == analysis[j].mmax) && (k < analysis[j].gmax))){
                         analysis[j].mmax = median;
                         analysis[j].gmax = k;
-                    }
-
+                }
 
                 free(disease_data);
             }
