@@ -8,7 +8,7 @@
 
 ## Sobre el proyecto
 <br />
-<a href="https://github.com/geru-scotland/genetics/blob/83e175821bf03966f446981878139ae24b99c813/docs/informe/Memoria%20del%20Proyecto.pdf">Ver informe/memoria de proyecto.</a>
+<a href="https://github.com/geru-scotland/genetics/blob/master/docs/informe/Memoria%20del%20Proyecto.pdf">Ver informe/memoria de proyecto.</a>
 <br />
 <br />
 En este proyecto se aborda el desarrollo de un sistema multiprocesador para el procesamiento y análisis de grandes cantidades de datos genéticos utilizando el lenguaje de programación C y el API de OpenMP. El objetivo principal es lograr una mayor eficiencia y rapidez en el análisis de estos datos mediante la paralelización del algoritmo K-means clustering, utilizado para agrupar y clasificar los datos genéticos en diferentes categorías.
